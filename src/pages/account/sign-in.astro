@@ -1,0 +1,47 @@
+---
+export const prerender = false;
+
+if (Astro.locals.user) {
+  return Astro.redirect('/account');
+}
+
+const sent = Astro.url.searchParams.get('sent') === '1';
+const error = Astro.url.searchParams.get('error');
+const returnTo = Astro.url.searchParams.get('returnTo') ?? '/account';
+const configured = Astro.locals.supabaseConfigured;
+---
+
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="robots" content="noindex" />
+    <title>Sign in | Velora</title>
+  </head>
+  <body>
+    <main>
+      <a href="/" aria-label="Return to Velora home">VELORA</a>
+      <h1>{sent ? 'Enter your code' : 'Your Velora account'}</h1>
+      <p>{sent ? 'Enter the six-digit code sent to your email.' : 'Sign in to view orders and continue to checkout.'}</p>
+
+      {!configured && <p role="alert">Customer accounts are awaiting secure service configuration.</p>}
+      {error && <p role="alert">We could not complete that request. Please check the details and try again.</p>}
+
+      {sent ? (
+        <form method="post" action="/api/auth/verify-code">
+          <label for="code">Six-digit code</label>
+          <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required />
+          <button type="submit">Verify and continue</button>
+        </form>
+      ) : (
+        <form method="post" action="/api/auth/request-code">
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required />
+          <input type="hidden" name="returnTo" value={returnTo} />
+          <button type="submit" disabled={!configured}>Email me a code</button>
+        </form>
+      )}
+    </main>
+  </body>
+</html>

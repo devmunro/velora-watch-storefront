@@ -7,12 +7,30 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "typecheck": "astro check"
+    "typecheck": "astro check",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "predeploy": "pnpm build",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "astro": "^7.2.0"
+    "@astrojs/cloudflare": "14.2.0",
+    "@supabase/ssr": "0.12.4",
+    "@supabase/supabase-js": "2.112.2",
+    "astro": "^7.2.0",
+    "stripe": "22.4.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@cloudflare/workers-types": "5.20260804.1",
+    "supabase": "2.112.0",
+    "typescript": "6.0.2",
+    "wrangler": "4.120.0"
   }
 }
