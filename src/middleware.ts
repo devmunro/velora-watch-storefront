@@ -1,27 +1,20 @@
 import { defineMiddleware } from 'astro:middleware';
 
+import { canAccessAdminSection } from './lib/server/admin-permissions';
 import { hasSupabaseConfiguration } from './lib/server/runtime-env';
 import { createRequestSupabase, getStaffRole } from './lib/server/supabase';
 
 const protectedAccountPath = /^\/account(?:\/|$)/;
 const protectedCheckoutPath = /^\/checkout\/success(?:\/|$)/;
 const publicAccountPaths = new Set(['/account/sign-in']);
-const adminPageRoles: Record<string, Array<NonNullable<App.Locals['staffRole']>>> = {
-  content: ['owner', 'editor'],
-  products: ['owner', 'editor'],
-  collections: ['owner', 'editor'],
-  journal: ['owner', 'editor'],
-  policies: ['owner', 'editor'],
-  media: ['owner', 'editor'],
-  inventory: ['owner', 'fulfilment'],
-  orders: ['owner', 'fulfilment'],
-  staff: ['owner'],
-  audit: ['owner'],
-};
-
 function applySecurityHeaders(response: Response, request: Request, authenticated: boolean) {
   const headers = response.headers;
-  const isSensitive = authenticated || new URL(request.url).pathname.startsWith('/api/');
+  const pathname = new URL(request.url).pathname;
+  const isSensitive =
+    authenticated ||
+    ['/account', '/admin', '/api', '/cart', '/checkout'].some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
 
   headers.set(
     'Content-Security-Policy',
@@ -101,8 +94,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (pathname.startsWith('/admin/') && staffRole) {
     const section = pathname.split('/')[2] ?? '';
-    const allowed = adminPageRoles[section];
-    if (allowed && !allowed.includes(staffRole)) {
+    if (!canAccessAdminSection(staffRole, section)) {
       return context.redirect('/admin?access=denied', 303);
     }
   }

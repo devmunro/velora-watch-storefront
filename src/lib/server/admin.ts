@@ -1,8 +1,9 @@
 import type { APIContext } from 'astro';
 
+import type { StaffRole } from './admin-permissions';
 import { createSupabaseAdmin, getStaffRole } from './supabase';
 
-export type StaffRole = NonNullable<App.Locals['staffRole']>;
+export type { StaffRole } from './admin-permissions';
 
 export const roleLabels: Record<StaffRole, string> = {
   owner: 'Owner',

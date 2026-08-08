@@ -419,6 +419,11 @@ const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.s
     outline: none;
   }
 
+  .search-field:focus-within {
+    outline: 2px solid var(--champagne-pale);
+    outline-offset: 4px;
+  }
+
   .search-results {
     display: grid;
     max-height: 22rem;

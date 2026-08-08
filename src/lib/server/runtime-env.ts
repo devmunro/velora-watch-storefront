@@ -59,7 +59,7 @@ export function requireSupabaseAdminEnvironment(environment = getRuntimeEnvironm
 }
 
 export function requireStripeEnvironment(environment = getRuntimeEnvironment()) {
-  if (!environment.STRIPE_SECRET_KEY) {
+  if (!environment.STRIPE_SECRET_KEY?.startsWith('sk_test_')) {
     throw new ConfigurationError('Payment services are not configured.');
   }
 

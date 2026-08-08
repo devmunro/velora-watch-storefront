@@ -35,7 +35,7 @@ if (!/^cs_[A-Za-z0-9_]{10,200}$/.test(sessionId) || !Astro.locals.user) {
   description="Your secure Velora checkout result."
   noindex
 >
-  <main class="result-page shell">
+  <div class="result-page shell">
     {orderId ? (
       <section class="result-card" data-order-confirmed>
         <span class="result-icon"><Check size={32} stroke-width={1.4} /></span>
@@ -60,14 +60,14 @@ if (!/^cs_[A-Za-z0-9_]{10,200}$/.test(sessionId) || !Astro.locals.user) {
       <section class="result-card">
         <p class="eyebrow">Confirmation unavailable</p>
         <h1>We could not confirm this order.</h1>
-        <p>{failed ? 'No charge has been confirmed on this page. Check your order history before trying again.' : 'Please check your order history.'}</p>
+        <p>{failed ? 'We could not display this confirmation. Check your order history or contact client care before attempting another payment.' : 'Please check your order history.'}</p>
         <div class="result-actions">
           <a class="button button-primary" href="/account/orders">View your orders</a>
           <a class="button button-secondary" href="/cart">Return to bag</a>
         </div>
       </section>
     )}
-  </main>
+  </div>
 
   {orderId && (
     <script>

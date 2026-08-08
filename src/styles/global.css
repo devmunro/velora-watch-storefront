@@ -323,7 +323,8 @@ a:hover .card-image img {
 .field select:focus,
 .input:focus {
   border-color: var(--champagne);
-  outline: none;
+  outline: 2px solid var(--champagne-pale);
+  outline-offset: 2px;
 }
 
 .form-grid {

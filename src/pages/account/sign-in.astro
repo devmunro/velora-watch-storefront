@@ -56,7 +56,6 @@ const errorMessage = error === 'rate-limit'
                   maxlength="6"
                   placeholder="000000"
                   required
-                  autofocus
                 />
               </div>
             </div>
@@ -163,6 +162,8 @@ const errorMessage = error === 'rate-limit'
 
   .input-icon:focus-within {
     border-color: var(--champagne);
+    outline: 2px solid var(--champagne-pale);
+    outline-offset: 2px;
   }
 
   .input-icon :global(svg) {

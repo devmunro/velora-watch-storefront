@@ -8,6 +8,9 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run",
+    "verify": "pnpm lint && pnpm test && pnpm build",
     "preview": "astro preview",
     "astro": "astro",
     "typecheck": "astro check",
@@ -33,9 +36,15 @@
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@cloudflare/workers-types": "5.20260804.1",
-    "sharp": "0.34.5",
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-astro": "1.7.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "sharp": "0.35.3",
     "supabase": "2.112.0",
     "typescript": "6.0.2",
+    "typescript-eslint": "8.66.0",
+    "vitest": "4.1.10",
     "wrangler": "4.120.0"
   }
 }
