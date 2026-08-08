@@ -35,6 +35,16 @@ export async function readForm(request: Request, maximumBytes = 16_384): Promise
   return request.formData();
 }
 
+export async function readJson(request: Request, maximumBytes = 16_384): Promise<unknown> {
+  const contentType = request.headers.get('content-type') ?? '';
+  const contentLength = Number(request.headers.get('content-length') ?? '0');
+  if (!contentType.toLowerCase().startsWith('application/json')) throw new TypeError('Unsupported content type.');
+  if (Number.isFinite(contentLength) && contentLength > maximumBytes) throw new RangeError('Request is too large.');
+  const text = await request.text();
+  if (new TextEncoder().encode(text).byteLength > maximumBytes) throw new RangeError('Request is too large.');
+  return JSON.parse(text) as unknown;
+}
+
 export function clearAuthAttemptCookies(context: Pick<APIContext, 'cookies'>) {
   context.cookies.delete('velora_otp_email', { path: '/' });
   context.cookies.delete('velora_return_to', { path: '/' });

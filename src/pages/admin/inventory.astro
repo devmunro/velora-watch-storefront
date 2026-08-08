@@ -1,0 +1,55 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getAdminInventory } from '../../lib/server/admin';
+
+export const prerender = false;
+const data = await getAdminInventory();
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+const record = (value: unknown) => Array.isArray(value) ? value[0] : value as any;
+const dateTime = (value: string) => new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+const inventoryRows = data.inventory.map((item: any) => {
+  const variant = record(item.variant);
+  const product = record(variant?.product);
+  const available = item.on_hand - item.reserved;
+  return { item, variant, product, available, low: available <= item.low_stock_threshold };
+});
+---
+
+<AdminLayout title="Inventory" description="Manage Velora stock, reservations and inventory movements." active="inventory">
+  <div class="admin-page-head"><div><p class="eyebrow">Stock control</p><h2>Inventory ledger</h2><p>Adjust physical stock, watch active reservations and review the append-only movement history.</p></div></div>
+  {saved && <p class="notice notice-success">Inventory adjusted and recorded.</p>}
+  {error === 'conflict' && <p class="notice notice-error">Stock changed before this adjustment was applied. Reload and review current levels.</p>}
+  {error && error !== 'conflict' && <p class="notice notice-error">The stock adjustment was rejected.</p>}
+  <section class="inventory-grid">
+    {inventoryRows.map(({ item, variant, product, available, low }) => (
+        <article class:list={['admin-card', 'inventory-card', { low }]}>
+          <div class="inventory-head"><div><p>{variant?.sku}</p><h2>{product?.name}</h2><span>{variant?.name}</span></div>{low && <span class="low-chip">Low stock</span>}</div>
+          <dl><div><dt>On hand</dt><dd>{item.on_hand}</dd></div><div><dt>Reserved</dt><dd>{item.reserved}</dd></div><div><dt>Available</dt><dd>{available}</dd></div></dl>
+          <form class="admin-form" method="post" action="/api/admin/inventory/adjust">
+            <div class="form-grid"><div class="field"><label>Adjustment</label><input name="delta" type="number" min="-1000" max="1000" placeholder="e.g. 5 or -1" required /></div><div class="field"><label>Low-stock warning</label><input name="lowStockThreshold" type="number" min="0" max="1000" value={item.low_stock_threshold} required /></div><div class="field field-wide"><label>Reason</label><input name="note" maxlength="240" placeholder="Stocktake, damaged unit, new delivery…" required /></div></div>
+            <input type="hidden" name="variantId" value={item.variant_id} /><input type="hidden" name="version" value={item.version} />
+            <button class="button button-secondary" type="submit">Record adjustment</button>
+          </form>
+        </article>
+    ))}
+  </section>
+
+  <section class="data-section">
+    <div class="section-title"><p class="eyebrow">Temporary holds</p><h2>Active reservations</h2></div>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Reservation</th><th>Items</th><th>Created</th><th>Expires</th><th>Status</th></tr></thead><tbody>
+      {data.reservations.length ? data.reservations.map((reservation: any) => <tr><td>{reservation.id.slice(0,8).toUpperCase()}</td><td>{reservation.items?.map((item:any) => `${item.sku} × ${item.quantity}`).join(', ')}</td><td>{dateTime(reservation.created_at)}</td><td>{dateTime(reservation.expires_at)}</td><td><span class="status-pill">{reservation.status}</span></td></tr>) : <tr><td colspan="5">No active reservations.</td></tr>}
+    </tbody></table></div>
+  </section>
+
+  <section class="data-section">
+    <div class="section-title"><p class="eyebrow">Append-only history</p><h2>Recent movements</h2></div>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>When</th><th>Reason</th><th>On hand</th><th>Reserved</th><th>Note</th></tr></thead><tbody>
+      {data.movements.map((movement:any) => <tr><td>{dateTime(movement.created_at)}</td><td>{movement.reason}</td><td>{movement.delta_on_hand > 0 ? '+' : ''}{movement.delta_on_hand}</td><td>{movement.delta_reserved > 0 ? '+' : ''}{movement.delta_reserved}</td><td>{movement.note ?? '—'}</td></tr>)}
+    </tbody></table></div>
+  </section>
+</AdminLayout>
+
+<style>
+  .notice{margin-bottom:1rem}.inventory-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.inventory-card.low{border-color:rgba(216,140,131,.35)}.inventory-head{display:flex;align-items:start;justify-content:space-between;gap:1rem}.inventory-head p{margin:0;color:var(--champagne);font-size:.62rem}.inventory-head h2{margin:.25rem 0!important;font-size:1.7rem!important}.inventory-head span{color:var(--ink-dim);font-size:.7rem}.low-chip{border:1px solid rgba(216,140,131,.4);padding:.2rem .45rem;color:#efb8b1!important;text-transform:uppercase}.inventory-card dl{display:grid;grid-template-columns:repeat(3,1fr);margin:1.5rem 0;border-block:1px solid var(--line)}.inventory-card dl div{display:grid;gap:.2rem;padding:.8rem;border-right:1px solid var(--line);text-align:center}.inventory-card dl div:last-child{border:0}.inventory-card dt{color:var(--ink-dim);font-size:.58rem;text-transform:uppercase}.inventory-card dd{margin:0;font-family:var(--font-serif);font-size:1.8rem}.data-section{margin-top:3rem}.section-title{margin-bottom:1rem}.section-title .eyebrow{margin-bottom:.2rem}.section-title h2{margin:0;font-family:var(--font-serif);font-size:2.4rem;font-weight:400}@media(max-width:70rem){.inventory-grid{grid-template-columns:1fr}}
+</style>

@@ -1,0 +1,412 @@
+---
+import {
+  Archive,
+  Boxes,
+  ClipboardList,
+  FileText,
+  Gauge,
+  House,
+  Image,
+  Layers,
+  Package,
+  ScrollText,
+  Settings,
+  ShieldCheck,
+  Users,
+} from '@lucide/astro';
+
+import { roleLabels, type StaffRole } from '../lib/server/admin';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  active: string;
+}
+
+const { title, description, active } = Astro.props;
+const role = Astro.locals.staffRole as StaffRole;
+const navigation = [
+  { key: 'dashboard', label: 'Dashboard', href: '/admin', icon: Gauge, roles: ['owner', 'editor', 'fulfilment'] },
+  { key: 'content', label: 'Homepage', href: '/admin/content', icon: House, roles: ['owner', 'editor'] },
+  { key: 'products', label: 'Products', href: '/admin/products', icon: Package, roles: ['owner', 'editor'] },
+  { key: 'collections', label: 'Collections', href: '/admin/collections', icon: Layers, roles: ['owner', 'editor'] },
+  { key: 'journal', label: 'Journal', href: '/admin/journal', icon: FileText, roles: ['owner', 'editor'] },
+  { key: 'policies', label: 'Policies', href: '/admin/policies', icon: ScrollText, roles: ['owner', 'editor'] },
+  { key: 'media', label: 'Media', href: '/admin/media', icon: Image, roles: ['owner', 'editor'] },
+  { key: 'inventory', label: 'Inventory', href: '/admin/inventory', icon: Boxes, roles: ['owner', 'fulfilment'] },
+  { key: 'orders', label: 'Orders', href: '/admin/orders', icon: ClipboardList, roles: ['owner', 'fulfilment'] },
+  { key: 'staff', label: 'Staff', href: '/admin/staff', icon: Users, roles: ['owner'] },
+  { key: 'audit', label: 'Audit history', href: '/admin/audit', icon: Archive, roles: ['owner'] },
+] as Array<{ key: string; label: string; href: string; icon: typeof Gauge; roles: StaffRole[] }>;
+---
+
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#050708" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} | Velora administration</title>
+  </head>
+  <body class="admin-body">
+    <a class="skip-link" href="#admin-content">Skip to content</a>
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="admin-brand">
+          <a href="/admin">Velora</a>
+          <span>Administration</span>
+        </div>
+        <nav aria-label="Administration">
+          {navigation.filter((item) => item.roles.includes(role)).map((item) => {
+            const Icon = item.icon;
+            return (
+              <a class:list={[{ active: active === item.key }]} href={item.href} aria-current={active === item.key ? 'page' : undefined}>
+                <Icon size={17} stroke-width={1.5} /> {item.label}
+              </a>
+            );
+          })}
+        </nav>
+        <div class="admin-sidebar-foot">
+          <div class="role-chip"><ShieldCheck size={15} /> {roleLabels[role]}</div>
+          <a href="/" target="_blank" rel="noopener noreferrer">View storefront</a>
+          <form method="post" action="/api/auth/sign-out"><button type="submit">Sign out</button></form>
+        </div>
+      </aside>
+      <div class="admin-main">
+        <header class="admin-topbar">
+          <div>
+            <p>{roleLabels[role]} access</p>
+            <h1>{title}</h1>
+          </div>
+          <a href="/admin" aria-label="Administration settings"><Settings size={20} /></a>
+        </header>
+        <main id="admin-content" class="admin-content">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  :global(.admin-body) {
+    background: #080a0b;
+  }
+
+  .admin-shell {
+    display: grid;
+    grid-template-columns: 16.5rem minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100dvh;
+    flex-direction: column;
+    border-right: 1px solid var(--line);
+    background: #050708;
+    padding: 1.5rem 1rem;
+  }
+
+  .admin-brand {
+    display: grid;
+    gap: 0.3rem;
+    padding: 0.4rem 0.75rem 1.6rem;
+  }
+
+  .admin-brand a {
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+  }
+
+  .admin-brand span {
+    color: var(--ink-dim);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .admin-sidebar nav {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .admin-sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    border: 1px solid transparent;
+    padding: 0.62rem 0.75rem;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .admin-sidebar nav a:hover,
+  .admin-sidebar nav a.active {
+    border-color: var(--line);
+    background: var(--surface-raised);
+    color: var(--champagne-pale);
+  }
+
+  .admin-sidebar-foot {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: auto;
+    border-top: 1px solid var(--line);
+    padding: 1rem 0.75rem 0;
+  }
+
+  .role-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: max-content;
+    border: 1px solid rgba(200, 164, 118, 0.35);
+    padding: 0.3rem 0.5rem;
+    color: var(--champagne-pale);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .admin-sidebar-foot a,
+  .admin-sidebar-foot button {
+    width: max-content;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--ink-dim);
+    font-size: 0.68rem;
+  }
+
+  .admin-topbar {
+    display: flex;
+    min-height: 6rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line);
+    background: rgba(8, 10, 11, 0.92);
+    padding: 1rem clamp(1.25rem, 4vw, 3.5rem);
+  }
+
+  .admin-topbar p {
+    margin: 0;
+    color: var(--champagne);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .admin-topbar h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .admin-topbar > a {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border: 1px solid var(--line);
+  }
+
+  .admin-content {
+    width: min(100%, 94rem);
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+  }
+
+  .admin-content :global(.admin-page-head) {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .admin-content :global(.admin-page-head h2),
+  .admin-content :global(.admin-card h2) {
+    margin-bottom: 0.35rem;
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .admin-content :global(.admin-page-head p),
+  .admin-content :global(.admin-card > p) {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .admin-content :global(.admin-card) {
+    border: 1px solid var(--line);
+    background: var(--surface-raised);
+    padding: clamp(1.2rem, 3vw, 2rem);
+  }
+
+  .admin-content :global(.admin-card + .admin-card) {
+    margin-top: 1rem;
+  }
+
+  .admin-content :global(.admin-table-wrap) {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+  }
+
+  .admin-content :global(.admin-table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+  }
+
+  .admin-content :global(.admin-table th),
+  .admin-content :global(.admin-table td) {
+    border-bottom: 1px solid var(--line);
+    padding: 0.8rem 0.9rem;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .admin-content :global(.admin-table th) {
+    color: var(--ink-dim);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .admin-content :global(.admin-table td) {
+    color: var(--ink-soft);
+  }
+
+  .admin-content :global(.admin-table a) {
+    color: var(--champagne-pale);
+  }
+
+  .admin-content :global(.status-pill) {
+    display: inline-flex;
+    width: max-content;
+    border: 1px solid var(--line);
+    padding: 0.2rem 0.45rem;
+    color: var(--ink-soft);
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .admin-content :global(.status-published),
+  .admin-content :global(.status-active),
+  .admin-content :global(.status-shipped) {
+    border-color: rgba(147, 182, 160, 0.4);
+    color: #b8d4c1;
+  }
+
+  .admin-content :global(.admin-form) {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .admin-content :global(.admin-actions) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 64rem) {
+    .admin-shell {
+      grid-template-columns: 5rem minmax(0, 1fr);
+    }
+
+    .admin-sidebar {
+      align-items: center;
+      padding-inline: 0.65rem;
+    }
+
+    .admin-brand a {
+      font-size: 0;
+    }
+
+    .admin-brand a::before {
+      content: 'V';
+      font-family: var(--font-serif);
+      font-size: 2rem;
+    }
+
+    .admin-brand span,
+    .admin-sidebar nav a:not(.active) {
+      font-size: 0;
+    }
+
+    .admin-sidebar nav a {
+      justify-content: center;
+      width: 2.9rem;
+      min-height: 2.9rem;
+      padding: 0;
+    }
+
+    .admin-sidebar nav a.active {
+      font-size: 0;
+    }
+
+    .admin-sidebar-foot {
+      justify-items: center;
+      padding-inline: 0;
+    }
+
+    .role-chip,
+    .admin-sidebar-foot a,
+    .admin-sidebar-foot form {
+      display: none;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .admin-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .admin-sidebar {
+      position: static;
+      width: 100%;
+      height: auto;
+      align-items: stretch;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 0.7rem 1rem;
+    }
+
+    .admin-brand {
+      display: none;
+    }
+
+    .admin-sidebar nav {
+      display: flex;
+      overflow-x: auto;
+    }
+
+    .admin-sidebar-foot {
+      display: none;
+    }
+
+    .admin-topbar {
+      min-height: 5rem;
+    }
+
+    .admin-content :global(.admin-page-head) {
+      align-items: start;
+      flex-direction: column;
+    }
+  }
+</style>

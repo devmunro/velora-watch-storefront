@@ -1,0 +1,24 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getAdminStaff, roleLabels } from '../../lib/server/admin';
+
+export const prerender = false;
+const staff = await getAdminStaff();
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+---
+
+<AdminLayout title="Staff" description="Manage Velora administration access." active="staff">
+  <div class="admin-page-head"><div><p class="eyebrow">Access control</p><h2>Staff accounts</h2><p>Grant the minimum role needed and deactivate access promptly when responsibilities change.</p></div></div>
+  {saved && <p class="notice notice-success">Staff access updated.</p>}
+  {error === 'not-found' && <p class="notice notice-error">No Velora account exists for that email. Ask the person to sign in once before granting staff access.</p>}
+  {error && error !== 'not-found' && <p class="notice notice-error">Staff access could not be updated.</p>}
+  <section class="admin-card add-staff"><p class="eyebrow">Grant access</p><h2>Add staff member</h2><form class="admin-form" method="post" action="/api/admin/staff"><div class="form-grid"><div class="field"><label>Existing account email</label><input name="email" type="email" maxlength="254" required /></div><div class="field"><label>Role</label><select name="role"><option value="editor">Editor</option><option value="fulfilment">Fulfilment</option><option value="owner">Owner</option></select></div></div><button class="button button-primary" type="submit">Grant access</button></form></section>
+  <section class="staff-list">
+    {staff.map((member:any)=><form class="admin-card staff-card" method="post" action="/api/admin/staff/update"><div><span class:list={['status-pill',{'status-active':member.active}]}>{member.active?'Active':'Inactive'}</span><h2>{member.email}</h2><p>Added {new Intl.DateTimeFormat('en-GB',{dateStyle:'medium'}).format(new Date(member.created_at))}</p></div><div class="field"><label>Role</label><select name="role">{Object.entries(roleLabels).map(([value,label])=><option value={value} selected={value===member.role}>{label}</option>)}</select></div><label class="check-field"><input type="checkbox" name="active" value="true" checked={member.active}/> Active access</label><input type="hidden" name="userId" value={member.user_id}/><input type="hidden" name="version" value={member.version}/><button class="button button-secondary" type="submit">Save access</button></form>)}
+  </section>
+</AdminLayout>
+
+<style>
+  .notice{margin-bottom:1rem}.add-staff{max-width:50rem}.add-staff .eyebrow{margin-bottom:.25rem}.add-staff form{margin-top:1.25rem}.staff-list{display:grid;gap:1rem;margin-top:2rem}.staff-card{display:grid;grid-template-columns:1fr 11rem auto auto;align-items:end;gap:1rem}.staff-card h2{margin:.5rem 0 .2rem!important;font-size:1.5rem!important}.staff-card p{font-size:.68rem}.check-field{display:flex;align-items:center;gap:.5rem;padding-bottom:.8rem;color:var(--ink-soft);font-size:.72rem}.check-field input{accent-color:var(--champagne)}@media(max-width:70rem){.staff-card{grid-template-columns:1fr 1fr}.staff-card>div:first-child{grid-column:1/-1}}
+</style>

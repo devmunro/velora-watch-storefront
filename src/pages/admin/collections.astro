@@ -1,0 +1,42 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getAdminCollections } from '../../lib/server/admin';
+
+export const prerender = false;
+const collections = await getAdminCollections();
+const role = Astro.locals.staffRole;
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+---
+
+<AdminLayout title="Collections" description="Manage Velora watch collections." active="collections">
+  <div class="admin-page-head"><div><p class="eyebrow">Catalogue structure</p><h2>Collections</h2><p>Organise product families and their public landing pages.</p></div></div>
+  {saved && <p class="notice notice-success">Collection saved.</p>}
+  {error && <p class="notice notice-error">The collection could not be saved. Reload if another session changed it.</p>}
+  {collections.map((collection: any) => (
+    <section class="admin-card collection-card">
+      <div class="card-head"><div><span class:list={['status-pill', `status-${collection.status}`]}>{collection.status}</span><h2>{collection.name}</h2></div>
+        {role === 'owner' && <form method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="collections" /><input type="hidden" name="id" value={collection.id} /><input type="hidden" name="version" value={collection.version} /><input type="hidden" name="status" value={collection.status === 'published' ? 'draft' : 'published'} /><input type="hidden" name="returnTo" value="/admin/collections" /><button class="button button-secondary" type="submit">{collection.status === 'published' ? 'Move to draft' : 'Publish'}</button></form>}
+      </div>
+      <form class="admin-form" method="post" action={`/api/admin/collections/${collection.id}`}>
+        <div class="form-grid">
+          <div class="field"><label>Name</label><input name="name" maxlength="100" value={collection.name} required /></div>
+          <div class="field"><label>Slug</label><input name="slug" maxlength="100" value={collection.slug} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></div>
+          <div class="field"><label>Eyebrow</label><input name="eyebrow" maxlength="100" value={collection.eyebrow} required /></div>
+          <div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={collection.position} required /></div>
+          <div class="field field-wide"><label>Description</label><textarea name="description" maxlength="1000" required>{collection.description}</textarea></div>
+          <div class="field"><label>Image path</label><input name="imagePath" maxlength="500" value={collection.image_path} required /></div>
+          <div class="field"><label>Alternative text</label><input name="imageAlt" maxlength="240" value={collection.image_alt} required /></div>
+          <div class="field"><label>SEO title</label><input name="seoTitle" maxlength="70" value={collection.seo_title ?? ''} /></div>
+          <div class="field"><label>SEO description</label><input name="seoDescription" maxlength="170" value={collection.seo_description ?? ''} /></div>
+        </div>
+        <input type="hidden" name="version" value={collection.version} />
+        <button class="button button-primary" type="submit">Save collection</button>
+      </form>
+    </section>
+  ))}
+</AdminLayout>
+
+<style>
+  .notice{margin-bottom:1rem}.collection-card{margin-bottom:1rem}.card-head{display:flex;align-items:start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}.card-head h2{margin-top:.5rem}
+</style>

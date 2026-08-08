@@ -1,0 +1,18 @@
+---
+import { formatMoney } from '../../../data/catalog';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getAdminOrders } from '../../../lib/server/admin';
+
+export const prerender = false;
+const orders = await getAdminOrders();
+const date = (value: string) => new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+---
+
+<AdminLayout title="Orders" description="Manage Velora order fulfilment." active="orders">
+  <div class="admin-page-head"><div><p class="eyebrow">Commerce</p><h2>Customer orders</h2><p>Review paid orders, update fulfilment and add tracking information.</p></div></div>
+  <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Placed</th><th></th></tr></thead><tbody>
+    {orders.length ? orders.map((order:any) => <tr><td><strong>{order.id.slice(0,8).toUpperCase()}</strong></td><td>{order.customer_email}</td><td>{order.order_items?.reduce((sum:number,item:any)=>sum+item.quantity,0) ?? 0}</td><td>{formatMoney(order.total_amount,order.currency)}</td><td><span class:list={['status-pill',`status-${order.status}`]}>{order.status}</span></td><td>{date(order.created_at)}</td><td><a href={`/admin/orders/${order.id}`}>Manage</a></td></tr>) : <tr><td colspan="7">No orders have been placed.</td></tr>}
+  </tbody></table></div>
+</AdminLayout>
+
+<style>td strong{color:var(--ink);font-weight:500}</style>

@@ -1,6 +1,7 @@
 ---
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import { getPublicNavigation } from '../lib/server/content';
 import '../styles/global.css';
 
 interface Props {
@@ -21,6 +22,7 @@ const {
 const pageTitle = title === 'Velora' ? title : `${title} | Velora`;
 const canonical = new URL(Astro.url.pathname, Astro.url.origin);
 const socialImage = new URL(image, Astro.url.origin);
+const navigation = await getPublicNavigation();
 ---
 
 <!doctype html>
@@ -45,7 +47,7 @@ const socialImage = new URL(image, Astro.url.origin);
   </head>
   <body class={bodyClass}>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <Header pathname={Astro.url.pathname} signedIn={Boolean(Astro.locals.user)} />
+    <Header pathname={Astro.url.pathname} signedIn={Boolean(Astro.locals.user)} navigation={navigation} />
     <main id="main-content">
       <slot />
     </main>

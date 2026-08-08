@@ -247,6 +247,18 @@ on conflict (id) do update set
   position = excluded.position,
   status = excluded.status;
 
+insert into public.navigation_items (id, label, href, position, status)
+values
+  ('61000000-0000-4000-8000-000000000001', 'Watches', '/watches', 1, 'published'),
+  ('61000000-0000-4000-8000-000000000002', 'Collections', '/collections', 2, 'published'),
+  ('61000000-0000-4000-8000-000000000003', 'Accessories', '/accessories', 3, 'published'),
+  ('61000000-0000-4000-8000-000000000004', 'About us', '/about', 4, 'published'),
+  ('61000000-0000-4000-8000-000000000005', 'Journal', '/journal', 5, 'published')
+on conflict (href) do update set
+  label = excluded.label,
+  position = excluded.position,
+  status = excluded.status;
+
 insert into public.journal_posts (
   id, slug, title, excerpt, body, image_path, image_alt, status, published_at, seo_title, seo_description
 )

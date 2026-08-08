@@ -1,0 +1,102 @@
+---
+import { ArrowLeft } from '@lucide/astro';
+
+import { formatMoney } from '../../../data/catalog';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getAdminProduct } from '../../../lib/server/admin';
+
+export const prerender = false;
+const result = await getAdminProduct(Astro.params.id ?? '');
+if (!result.product) return Astro.redirect('/admin/products?error=not-found');
+const product: any = result.product;
+const role = Astro.locals.staffRole;
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+const specs = JSON.stringify(product.specifications ?? {}, null, 2);
+---
+
+<AdminLayout title={product.name} description={`Edit ${product.name}.`} active="products">
+  <a class="back-link" href="/admin/products"><ArrowLeft size={15} /> Products</a>
+  <div class="admin-page-head">
+    <div><p class="eyebrow">{product.slug}</p><h2>{product.name}</h2><p>Version {product.version} · {product.status}</p></div>
+    {role === 'owner' && (
+      <form method="post" action="/api/admin/publish">
+        <input type="hidden" name="entity" value="products" /><input type="hidden" name="id" value={product.id} />
+        <input type="hidden" name="version" value={product.version} /><input type="hidden" name="status" value={product.status === 'published' ? 'draft' : 'published'} />
+        <input type="hidden" name="returnTo" value={`/admin/products/${product.id}`} />
+        <button class="button button-secondary" type="submit">{product.status === 'published' ? 'Move to draft' : 'Publish product'}</button>
+      </form>
+    )}
+  </div>
+  {saved && <p class="notice notice-success">Changes saved.</p>}
+  {error === 'conflict' && <p class="notice notice-error">This product changed in another session. Reload before editing.</p>}
+  {error && error !== 'conflict' && <p class="notice notice-error">Changes could not be saved.</p>}
+
+  <section class="admin-card">
+    <p class="eyebrow">Product content</p><h2>Editorial details</h2>
+    <form class="admin-form product-form" method="post" action={`/api/admin/products/${product.id}`}>
+      <div class="form-grid">
+        <div class="field"><label>Name</label><input name="name" maxlength="120" value={product.name} required /></div>
+        <div class="field"><label>Slug</label><input name="slug" maxlength="120" value={product.slug} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></div>
+        <div class="field"><label>Collection</label><select name="collectionId"><option value="">Unassigned</option>{result.collections.map((collection: any) => <option value={collection.id} selected={collection.id === product.collection_id}>{collection.name}</option>)}</select></div>
+        <div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={product.position} required /></div>
+        <div class="field field-wide"><label>Short description</label><textarea name="shortDescription" maxlength="280" required>{product.short_description}</textarea></div>
+        <div class="field field-wide"><label>Full description</label><textarea name="description" maxlength="4000" required>{product.description}</textarea></div>
+        <div class="field field-wide"><label>Specifications (JSON object)</label><textarea class="code-field" name="specifications" maxlength="5000" required>{specs}</textarea></div>
+        <div class="field"><label>Primary image path</label><input name="primaryImagePath" maxlength="500" value={product.primary_image_path} required /></div>
+        <div class="field"><label>Primary image alternative text</label><input name="primaryImageAlt" maxlength="240" value={product.primary_image_alt} required /></div>
+        <div class="field"><label>SEO title</label><input name="seoTitle" maxlength="70" value={product.seo_title ?? ''} /></div>
+        <div class="field"><label>SEO description</label><input name="seoDescription" maxlength="170" value={product.seo_description ?? ''} /></div>
+        <label class="check-field field-wide"><input type="checkbox" name="featured" value="true" checked={product.featured} /> Featured on the homepage</label>
+      </div>
+      <input type="hidden" name="version" value={product.version} />
+      <button class="button button-primary" type="submit">Save product</button>
+    </form>
+  </section>
+
+  <section class="variants-section">
+    <div class="section-title"><p class="eyebrow">Purchasable variants</p><h2>SKUs and pricing</h2></div>
+    {product.variants.map((variant: any) => (
+      <article class="admin-card variant-card">
+        <div class="variant-head"><div><span class:list={['status-pill', { 'status-active': variant.active }]}>{variant.active ? 'Active' : 'Inactive'}</span><h2>{variant.name}</h2><p>{variant.sku} · {formatMoney(variant.price_amount, variant.currency)}</p></div></div>
+        <form class="admin-form" method="post" action={`/api/admin/variants/${variant.id}`}>
+          <div class="form-grid">
+            <div class="field"><label>Name</label><input name="name" maxlength="100" value={variant.name} required /></div>
+            <div class="field"><label>SKU</label><input name="sku" maxlength="40" value={variant.sku} pattern="[A-Z0-9-]+" required /></div>
+            <div class="field"><label>Finish</label><input name="finish" maxlength="100" value={variant.finish} required /></div>
+            <div class="field"><label>Strap</label><input name="strap" maxlength="100" value={variant.strap} required /></div>
+            <div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={variant.position} required /></div>
+          </div>
+          <input type="hidden" name="version" value={variant.version} /><input type="hidden" name="productId" value={product.id} />
+          <button class="button button-secondary" type="submit">Save variant details</button>
+        </form>
+        {role === 'owner' && (
+          <form class="price-form" method="post" action={`/api/admin/variants/${variant.id}/price`}>
+            <div class="field"><label>Price (pence)</label><input name="priceAmount" type="number" min="100" max="10000000" value={variant.price_amount} required /></div>
+            <label class="check-field"><input type="checkbox" name="active" value="true" checked={variant.active} /> Available for future purchases</label>
+            <input type="hidden" name="version" value={variant.version} /><input type="hidden" name="productId" value={product.id} />
+            <button class="button button-primary" type="submit">Update price and availability</button>
+          </form>
+        )}
+      </article>
+    ))}
+  </section>
+</AdminLayout>
+
+<style>
+  .back-link { display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1.5rem;color:var(--ink-soft);font-size:.7rem;text-transform:uppercase; }
+  .notice { margin-bottom:1rem; }
+  .product-form { margin-top:1.5rem; }
+  .code-field { min-height:12rem;font-family:ui-monospace,monospace;font-size:.75rem; }
+  .check-field { display:flex;align-items:center;gap:.6rem;color:var(--ink-soft);font-size:.75rem; }
+  .check-field input { width:1rem;height:1rem;accent-color:var(--champagne); }
+  .variants-section { margin-top:3rem; }
+  .section-title { margin-bottom:1rem; }
+  .section-title .eyebrow { margin-bottom:.2rem; }
+  .section-title h2 { margin:0;font-family:var(--font-serif);font-size:2.5rem;font-weight:400; }
+  .variant-card { display:grid;grid-template-columns:.6fr 1.25fr .85fr;gap:1.5rem;align-items:start; }
+  .variant-head h2 { margin:.55rem 0 .25rem;font-size:1.7rem!important; }
+  .variant-head p { font-size:.7rem; }
+  .price-form { display:grid;gap:1rem;border-left:1px solid var(--line);padding-left:1.5rem; }
+  @media(max-width:72rem){.variant-card{grid-template-columns:1fr}.price-form{border-left:0;border-top:1px solid var(--line);padding:1.25rem 0 0}}
+</style>

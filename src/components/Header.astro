@@ -4,9 +4,10 @@ import { ChevronDown, Menu, Search, ShoppingBag, UserRound, X } from '@lucide/as
 interface Props {
   pathname: string;
   signedIn?: boolean;
+  navigation: Array<{ id: string; label: string; href: string }>;
 }
 
-const { pathname, signedIn = false } = Astro.props;
+const { pathname, signedIn = false, navigation } = Astro.props;
 const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
 ---
 
@@ -16,13 +17,11 @@ const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.s
     <a class="wordmark" href="/" aria-label="Velora home">Velora</a>
 
     <nav class="desktop-nav" aria-label="Primary navigation">
-      <a class:list={[{ active: isActive('/watches') }]} href="/watches">Watches</a>
-      <a class:list={[{ active: isActive('/collections') }]} href="/collections">
-        Collections <ChevronDown size={14} stroke-width={1.5} aria-hidden="true" />
-      </a>
-      <a class:list={[{ active: isActive('/accessories') }]} href="/accessories">Accessories</a>
-      <a class:list={[{ active: isActive('/about') }]} href="/about">About us</a>
-      <a class:list={[{ active: isActive('/journal') }]} href="/journal">Journal</a>
+      {navigation.map((item) => (
+        <a class:list={[{ active: isActive(item.href) }]} href={item.href}>
+          {item.label} {item.href === '/collections' && <ChevronDown size={14} stroke-width={1.5} aria-hidden="true" />}
+        </a>
+      ))}
     </nav>
 
     <div class="header-actions">
@@ -51,11 +50,7 @@ const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.s
       </button>
     </div>
     <nav class="mobile-nav shell" aria-label="Mobile navigation">
-      <a href="/watches">Watches</a>
-      <a href="/collections">Collections</a>
-      <a href="/accessories">Accessories</a>
-      <a href="/about">About us</a>
-      <a href="/journal">Journal</a>
+      {navigation.map((item) => <a href={item.href}>{item.label}</a>)}
       <a href="/account">{signedIn ? 'Your account' : 'Sign in'}</a>
     </nav>
   </div>

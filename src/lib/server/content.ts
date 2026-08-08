@@ -217,3 +217,27 @@ export async function getPublishedPolicy(slug: string) {
   const published = (await getPublicContent()).policies.find((policy) => policy.slug === slug);
   return published ?? fallbackPolicies.find((policy) => policy.slug === slug);
 }
+
+const fallbackNavigation = [
+  { id: 'watches', label: 'Watches', href: '/watches' },
+  { id: 'collections', label: 'Collections', href: '/collections' },
+  { id: 'accessories', label: 'Accessories', href: '/accessories' },
+  { id: 'about', label: 'About us', href: '/about' },
+  { id: 'journal', label: 'Journal', href: '/journal' },
+];
+
+export async function getPublicNavigation() {
+  const supabase = createPublicSupabase();
+  if (!supabase) return fallbackNavigation;
+  try {
+    const { data, error } = await supabase
+      .from('navigation_items')
+      .select('id,label,href')
+      .eq('status', 'published')
+      .order('position');
+    if (error || !data?.length) return fallbackNavigation;
+    return data as typeof fallbackNavigation;
+  } catch {
+    return fallbackNavigation;
+  }
+}

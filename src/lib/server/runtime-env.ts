@@ -57,3 +57,14 @@ export function requireSupabaseAdminEnvironment(environment = getRuntimeEnvironm
     secretKey: environment.SUPABASE_SECRET_KEY,
   };
 }
+
+export function requireStripeEnvironment(environment = getRuntimeEnvironment()) {
+  if (!environment.STRIPE_SECRET_KEY) {
+    throw new ConfigurationError('Payment services are not configured.');
+  }
+
+  return {
+    secretKey: environment.STRIPE_SECRET_KEY,
+    webhookSecret: environment.STRIPE_WEBHOOK_SECRET,
+  };
+}

@@ -85,10 +85,6 @@ grant select, insert, update on private.account_deletion_requests to service_rol
 revoke all on function private.consume_auth_rate_limit(text, integer, integer) from public, anon, authenticated;
 grant execute on function private.consume_auth_rate_limit(text, integer, integer) to service_role;
 
-create unique index one_default_address_per_customer_idx
-on public.addresses (user_id)
-where is_default;
-
 create or replace function private.create_customer_address(
   p_user_id uuid,
   p_label text,

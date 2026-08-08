@@ -15,6 +15,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
+    "admin:grant-owner": "node --env-file-if-exists=.env scripts/grant-owner.mjs",
     "predeploy": "pnpm build",
     "deploy": "wrangler deploy"
   },

@@ -18,6 +18,7 @@ try {
 
 const name = overview?.profile?.first_name || 'there';
 const defaultAddress = overview?.addresses.find((address) => address.is_default) ?? overview?.addresses[0];
+const adminDenied = Astro.url.searchParams.get('admin') === 'denied';
 const formatDate = (date: string) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date));
 ---
 
@@ -33,6 +34,8 @@ const formatDate = (date: string) => new Intl.DateTimeFormat('en-GB', { day: 'nu
       <p>Everything connected to your Velora account, in one place.</p>
     </div>
   </div>
+
+  {adminDenied && <p class="notice notice-error" role="alert">This account does not have active Velora administration access.</p>}
 
   {unavailable ? (
     <p class="notice notice-error" role="alert">Your account details are temporarily unavailable. Please try again shortly.</p>

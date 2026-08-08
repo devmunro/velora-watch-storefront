@@ -1,0 +1,31 @@
+---
+import { ArrowLeft } from '@lucide/astro';
+
+import { formatMoney } from '../../../data/catalog';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getAdminOrder } from '../../../lib/server/admin';
+
+export const prerender = false;
+const order:any = await getAdminOrder(Astro.params.id ?? '');
+if (!order) return Astro.redirect('/admin/orders?error=not-found');
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+const address = order.shipping_address as Record<string,string|undefined>;
+---
+
+<AdminLayout title={`Order ${order.id.slice(0,8).toUpperCase()}`} description="Manage Velora order fulfilment." active="orders">
+  <a class="back-link" href="/admin/orders"><ArrowLeft size={15}/> Orders</a>
+  <div class="admin-page-head"><div><p class="eyebrow">{order.customer_email}</p><h2>Order {order.id.slice(0,8).toUpperCase()}</h2><p>{order.order_items.length} line item(s) · {formatMoney(order.total_amount,order.currency)}</p></div><span class:list={['status-pill',`status-${order.status}`]}>{order.status}</span></div>
+  {saved && <p class="notice notice-success">Fulfilment details saved.</p>}{error && <p class="notice notice-error">The order changed or could not be updated.</p>}
+  <div class="order-grid">
+    <section class="admin-card"><h2>Items</h2><div class="item-list">{order.order_items.map((item:any)=><div><span><strong>{item.product_name}</strong><small>{item.variant_name} · {item.sku}</small></span><span>× {item.quantity}</span><strong>{formatMoney(item.line_total,order.currency)}</strong></div>)}</div></section>
+    <section class="admin-card"><h2>Delivery address</h2><address>{address.name ?? address.recipient_name}<br/>{address.line1 ?? address.line_1}<br/>{(address.line2 ?? address.line_2)&&<>{address.line2 ?? address.line_2}<br/></>}{address.city}<br/>{address.state&&<>{address.state}<br/></>}{address.postal_code ?? address.postcode}<br/>{address.country ?? 'GB'}</address></section>
+  </div>
+  <section class="admin-card fulfilment-card"><p class="eyebrow">Fulfilment</p><h2>Status and tracking</h2>
+    <form class="admin-form" method="post" action={`/api/admin/orders/${order.id}`}><div class="form-grid"><div class="field"><label>Status</label><select name="status">{['paid','processing','shipped','cancelled','refunded'].map(status=><option value={status} selected={status===order.status}>{status}</option>)}</select></div><div class="field"><label>Tracking number</label><input name="trackingNumber" maxlength="120" value={order.tracking_number ?? ''}/></div><div class="field field-wide"><label>Tracking URL (HTTPS)</label><input name="trackingUrl" type="url" maxlength="500" value={order.tracking_url ?? ''}/></div></div><input type="hidden" name="version" value={order.version}/><button class="button button-primary" type="submit">Save fulfilment</button></form>
+  </section>
+</AdminLayout>
+
+<style>
+  .back-link{display:inline-flex;gap:.4rem;align-items:center;margin-bottom:1.5rem;color:var(--ink-soft);font-size:.7rem;text-transform:uppercase}.notice{margin-bottom:1rem}.order-grid{display:grid;grid-template-columns:1.4fr .6fr;gap:1rem}.order-grid h2,.fulfilment-card h2{font-size:1.8rem!important}.item-list{border-top:1px solid var(--line)}.item-list>div{display:grid;grid-template-columns:1fr auto auto;gap:1rem;border-bottom:1px solid var(--line);padding:.8rem 0;font-size:.75rem}.item-list span:first-child{display:grid}.item-list small,address{color:var(--ink-soft);font-size:.7rem;font-style:normal}.fulfilment-card{margin-top:1rem!important}.fulfilment-card .eyebrow{margin-bottom:.25rem}.fulfilment-card form{margin-top:1.25rem}@media(max-width:60rem){.order-grid{grid-template-columns:1fr}}
+</style>

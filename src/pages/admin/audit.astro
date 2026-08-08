@@ -1,0 +1,17 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getAdminAudit, roleLabels } from '../../lib/server/admin';
+
+export const prerender = false;
+const entries = await getAdminAudit();
+const date = (value:string)=>new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'medium'}).format(new Date(value));
+---
+
+<AdminLayout title="Audit history" description="Review material Velora staff actions." active="audit">
+  <div class="admin-page-head"><div><p class="eyebrow">Append-only record</p><h2>Audit history</h2><p>Material content, stock, order and access actions without secrets or full sensitive payloads.</p></div></div>
+  <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>When</th><th>Role</th><th>Action</th><th>Entity</th><th>Reference</th><th>Context</th></tr></thead><tbody>
+    {entries.length ? entries.map((entry:any)=><tr><td>{date(entry.created_at)}</td><td>{entry.actor_role ? roleLabels[entry.actor_role as keyof typeof roleLabels] ?? entry.actor_role : 'System'}</td><td><strong>{entry.action}</strong></td><td>{entry.entity_type}</td><td>{entry.entity_id?.slice(0,16) ?? '—'}</td><td><code>{Object.keys(entry.metadata ?? {}).join(', ') || '—'}</code></td></tr>) : <tr><td colspan="6">No audit entries yet.</td></tr>}
+  </tbody></table></div>
+</AdminLayout>
+
+<style>td strong{color:var(--ink);font-weight:500}code{color:var(--ink-dim);font-size:.65rem}</style>
