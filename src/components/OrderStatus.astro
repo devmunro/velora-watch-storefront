@@ -1,0 +1,49 @@
+---
+interface Props {
+  status: string;
+}
+
+const { status } = Astro.props;
+const labels: Record<string, string> = {
+  paid: 'Paid',
+  processing: 'Processing',
+  shipped: 'Shipped',
+  cancelled: 'Cancelled',
+  refunded: 'Refunded',
+};
+---
+
+<span class:list={['order-status', `status-${status}`]}>{labels[status] ?? status}</span>
+
+<style>
+  .order-status {
+    display: inline-flex;
+    align-items: center;
+    width: max-content;
+    min-height: 1.75rem;
+    border: 1px solid var(--line);
+    padding: 0.25rem 0.55rem;
+    color: var(--ink-soft);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .status-paid,
+  .status-processing {
+    border-color: rgba(200, 164, 118, 0.4);
+    color: var(--champagne-pale);
+  }
+
+  .status-shipped {
+    border-color: rgba(147, 182, 160, 0.42);
+    color: #b8d4c1;
+  }
+
+  .status-cancelled,
+  .status-refunded {
+    color: var(--ink-dim);
+  }
+</style>

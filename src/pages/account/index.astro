@@ -1,25 +1,210 @@
 ---
+import { ArrowRight, MapPin, Package, UserRound } from '@lucide/astro';
+
+import OrderStatus from '../../components/OrderStatus.astro';
+import { formatMoney } from '../../data/catalog';
+import AccountLayout from '../../layouts/AccountLayout.astro';
+import { getAccountOverview } from '../../lib/server/account';
+
 export const prerender = false;
 
-const user = Astro.locals.user;
+let overview: Awaited<ReturnType<typeof getAccountOverview>> | null = null;
+let unavailable = false;
+try {
+  overview = await getAccountOverview(Astro);
+} catch {
+  unavailable = true;
+}
+
+const name = overview?.profile?.first_name || 'there';
+const defaultAddress = overview?.addresses.find((address) => address.is_default) ?? overview?.addresses[0];
+const formatDate = (date: string) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date));
 ---
 
-<!doctype html>
-<html lang="en-GB">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="robots" content="noindex" />
-    <title>My account | Velora</title>
-  </head>
-  <body>
-    <main>
-      <a href="/">VELORA</a>
-      <h1>My account</h1>
-      <p>{user?.email}</p>
-      <form method="post" action="/api/auth/sign-out">
-        <button type="submit">Sign out</button>
-      </form>
-    </main>
-  </body>
-</html>
+<AccountLayout
+  title="My account"
+  description="Manage your Velora profile, delivery addresses and orders."
+  active="overview"
+>
+  <div class="account-section-head">
+    <div>
+      <p class="eyebrow">Overview</p>
+      <h2>Welcome, {name}.</h2>
+      <p>Everything connected to your Velora account, in one place.</p>
+    </div>
+  </div>
+
+  {unavailable ? (
+    <p class="notice notice-error" role="alert">Your account details are temporarily unavailable. Please try again shortly.</p>
+  ) : (
+    <>
+      <div class="overview-grid">
+        <article class="account-card overview-card">
+          <UserRound size={22} stroke-width={1.4} />
+          <div>
+            <h2>Profile</h2>
+            <p>{overview?.profile?.first_name ? `${overview.profile.first_name} ${overview.profile.last_name ?? ''}`.trim() : 'Add your name and telephone number.'}</p>
+          </div>
+          <a href="/account/profile" aria-label="Manage profile"><ArrowRight size={18} /></a>
+        </article>
+        <article class="account-card overview-card">
+          <MapPin size={22} stroke-width={1.4} />
+          <div>
+            <h2>Delivery</h2>
+            <p>{defaultAddress ? `${defaultAddress.line_1}, ${defaultAddress.postcode}` : 'Add an address before checkout.'}</p>
+          </div>
+          <a href="/account/addresses" aria-label="Manage delivery addresses"><ArrowRight size={18} /></a>
+        </article>
+      </div>
+
+      <section class="orders-section">
+        <div class="orders-head">
+          <div>
+            <p class="eyebrow">Recent orders</p>
+            <h2>Order history</h2>
+          </div>
+          <a class="text-link" href="/account/orders">View all <ArrowRight size={16} /></a>
+        </div>
+        {overview?.orders.length ? (
+          <div class="order-list">
+            {overview.orders.map((order) => (
+              <a class="order-row" href={`/account/orders/${order.id}`}>
+                <Package size={21} stroke-width={1.4} aria-hidden="true" />
+                <div>
+                  <strong>Order {order.id.slice(0, 8).toUpperCase()}</strong>
+                  <span>{formatDate(order.created_at)} · {order.order_items.reduce((sum, item) => sum + item.quantity, 0)} item(s)</span>
+                </div>
+                <OrderStatus status={order.status} />
+                <strong>{formatMoney(order.total_amount, order.currency)}</strong>
+                <ArrowRight size={17} aria-hidden="true" />
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div class="empty-state compact-empty">
+            <h2>No orders yet.</h2>
+            <p>Your Velora orders will appear here after secure checkout.</p>
+            <a class="button button-secondary" href="/watches">Explore watches</a>
+          </div>
+        )}
+      </section>
+    </>
+  )}
+</AccountLayout>
+
+<style>
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  .overview-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: 1rem;
+  }
+
+  .overview-card > :global(svg) {
+    margin-top: 0.15rem;
+    color: var(--champagne);
+  }
+
+  .overview-card h2 {
+    font-size: 1.7rem !important;
+  }
+
+  .overview-card p {
+    font-size: 0.8rem;
+  }
+
+  .overview-card > a {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border: 1px solid var(--line);
+  }
+
+  .orders-section {
+    margin-top: 3.5rem;
+  }
+
+  .orders-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .orders-head .eyebrow {
+    margin-bottom: 0.35rem;
+  }
+
+  .orders-head h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 2.5rem;
+    font-weight: 400;
+  }
+
+  .order-list {
+    border-top: 1px solid var(--line);
+  }
+
+  .order-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line);
+    padding: 1rem 0;
+  }
+
+  .order-row > :global(svg:first-child) {
+    color: var(--champagne);
+  }
+
+  .order-row div {
+    display: grid;
+  }
+
+  .order-row strong {
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .order-row span {
+    color: var(--ink-dim);
+    font-size: 0.68rem;
+  }
+
+  .compact-empty {
+    padding: 2.5rem;
+  }
+
+  @media (max-width: 62rem) {
+    .overview-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .order-row {
+      grid-template-columns: auto 1fr auto;
+    }
+
+    .order-row > :global(.order-status) {
+      grid-column: 2;
+    }
+
+    .order-row > strong {
+      grid-row: 1;
+      grid-column: 3;
+    }
+
+    .order-row > :global(svg:last-child) {
+      display: none;
+    }
+  }
+</style>

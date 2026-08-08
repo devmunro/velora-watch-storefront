@@ -1,0 +1,125 @@
+---
+import { ArrowRight, Package } from '@lucide/astro';
+
+import OrderStatus from '../../../components/OrderStatus.astro';
+import { formatMoney } from '../../../data/catalog';
+import AccountLayout from '../../../layouts/AccountLayout.astro';
+import { getCustomerOrders } from '../../../lib/server/account';
+
+export const prerender = false;
+
+let orders: Awaited<ReturnType<typeof getCustomerOrders>> = [];
+let unavailable = false;
+try {
+  orders = await getCustomerOrders(Astro);
+} catch {
+  unavailable = true;
+}
+
+const formatDate = (date: string) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(date));
+---
+
+<AccountLayout title="Orders" description="View current and previous Velora orders." active="orders">
+  <div class="account-section-head">
+    <div>
+      <p class="eyebrow">Order history</p>
+      <h2>Your orders</h2>
+      <p>Track current orders and revisit the details of previous purchases.</p>
+    </div>
+  </div>
+
+  {unavailable ? (
+    <p class="notice notice-error" role="alert">Your orders are temporarily unavailable.</p>
+  ) : orders.length ? (
+    <div class="orders-list">
+      {orders.map((order) => (
+        <article class="account-card order-card">
+          <div class="order-icon"><Package size={22} stroke-width={1.4} /></div>
+          <div class="order-main">
+            <p>Order {order.id.slice(0, 8).toUpperCase()}</p>
+            <h2>{order.order_items.map((item) => item.product_name).join(', ')}</h2>
+            <span>{formatDate(order.created_at)} · {order.order_items.reduce((sum, item) => sum + item.quantity, 0)} item(s)</span>
+          </div>
+          <OrderStatus status={order.status} />
+          <strong class="order-total">{formatMoney(order.total_amount, order.currency)}</strong>
+          <a class="order-link" href={`/account/orders/${order.id}`} aria-label={`View order ${order.id.slice(0, 8)}`}>
+            <ArrowRight size={18} />
+          </a>
+        </article>
+      ))}
+    </div>
+  ) : (
+    <div class="empty-state">
+      <h2>Your first Velora awaits.</h2>
+      <p>Completed purchases and fulfilment updates will appear here.</p>
+      <a class="button button-primary" href="/watches">Explore watches</a>
+    </div>
+  )}
+</AccountLayout>
+
+<style>
+  .orders-list {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .order-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    align-items: center;
+    gap: 1.1rem;
+  }
+
+  .order-icon,
+  .order-link {
+    display: grid;
+    width: 2.7rem;
+    height: 2.7rem;
+    place-items: center;
+    border: 1px solid var(--line);
+    color: var(--champagne);
+  }
+
+  .order-main p {
+    margin-bottom: 0.2rem;
+    color: var(--champagne);
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .order-main h2 {
+    margin: 0 0 0.15rem;
+    font-size: 1.5rem !important;
+  }
+
+  .order-main span {
+    color: var(--ink-dim);
+    font-size: 0.68rem;
+  }
+
+  .order-total {
+    color: var(--champagne-pale);
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+
+  @media (max-width: 64rem) {
+    .order-card {
+      grid-template-columns: auto 1fr auto;
+    }
+
+    .order-card > :global(.order-status) {
+      grid-column: 2;
+    }
+
+    .order-total {
+      grid-row: 1;
+      grid-column: 3;
+    }
+
+    .order-link {
+      display: none;
+    }
+  }
+</style>

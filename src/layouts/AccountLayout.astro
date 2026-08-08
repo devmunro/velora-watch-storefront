@@ -1,0 +1,191 @@
+---
+import { MapPin, Package, Trash2, UserRound } from '@lucide/astro';
+
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  active: 'overview' | 'profile' | 'addresses' | 'orders' | 'deletion';
+}
+
+const { title, description, active } = Astro.props;
+const email = Astro.locals.user?.email ?? '';
+const links = [
+  { key: 'overview', label: 'Overview', href: '/account', icon: UserRound },
+  { key: 'profile', label: 'Profile', href: '/account/profile', icon: UserRound },
+  { key: 'addresses', label: 'Delivery addresses', href: '/account/addresses', icon: MapPin },
+  { key: 'orders', label: 'Orders', href: '/account/orders', icon: Package },
+  { key: 'deletion', label: 'Account request', href: '/account/delete', icon: Trash2 },
+] as const;
+---
+
+<BaseLayout title={title} description={description} noindex bodyClass="account-page">
+  <header class="account-header">
+    <div class="shell">
+      <p class="eyebrow">Your Velora</p>
+      <h1>{title}</h1>
+      <p>{email}</p>
+    </div>
+  </header>
+  <div class="account-layout shell">
+    <aside class="account-sidebar">
+      <nav aria-label="Your account">
+        {links.map((link) => {
+          const Icon = link.icon;
+          return (
+            <a class:list={[{ active: active === link.key }]} href={link.href} aria-current={active === link.key ? 'page' : undefined}>
+              <Icon size={17} stroke-width={1.5} /> {link.label}
+            </a>
+          );
+        })}
+      </nav>
+      <form method="post" action="/api/auth/sign-out">
+        <button type="submit">Sign out</button>
+      </form>
+    </aside>
+    <section class="account-content">
+      <slot />
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .account-header {
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-raised);
+    padding-block: clamp(3rem, 6vw, 5rem);
+  }
+
+  .account-header .eyebrow {
+    margin-bottom: 0.45rem;
+  }
+
+  .account-header h1 {
+    margin-bottom: 0.5rem;
+    font-family: var(--font-serif);
+    font-size: clamp(3.2rem, 7vw, 5.5rem);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 0.9;
+  }
+
+  .account-header p:last-child {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+  }
+
+  .account-layout {
+    display: grid;
+    grid-template-columns: 15.5rem minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(2rem, 6vw, 6rem);
+    padding-block: clamp(3rem, 7vw, 6rem);
+  }
+
+  .account-sidebar {
+    position: sticky;
+    top: 7.2rem;
+  }
+
+  .account-sidebar nav {
+    display: grid;
+    border-top: 1px solid var(--line);
+  }
+
+  .account-sidebar a,
+  .account-sidebar button {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    padding: 0.85rem 0.2rem;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    text-align: left;
+  }
+
+  .account-sidebar a:hover,
+  .account-sidebar a.active,
+  .account-sidebar button:hover {
+    color: var(--champagne-pale);
+  }
+
+  .account-sidebar form {
+    margin-top: 1rem;
+  }
+
+  .account-content {
+    min-width: 0;
+  }
+
+  .account-content :global(.account-section-head) {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .account-content :global(.account-section-head h2),
+  .account-content :global(.account-card h2) {
+    margin-bottom: 0.45rem;
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .account-content :global(.account-section-head p),
+  .account-content :global(.account-card > p) {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .account-content :global(.account-card) {
+    border: 1px solid var(--line);
+    background: var(--surface-raised);
+    padding: clamp(1.35rem, 3vw, 2.2rem);
+  }
+
+  .account-content :global(.account-card + .account-card) {
+    margin-top: 1.25rem;
+  }
+
+  @media (max-width: 52rem) {
+    .account-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .account-sidebar {
+      position: static;
+      overflow-x: auto;
+    }
+
+    .account-sidebar nav {
+      display: flex;
+      width: max-content;
+      border-top: 0;
+    }
+
+    .account-sidebar a {
+      width: auto;
+      min-width: max-content;
+      padding-inline: 0.8rem;
+    }
+
+    .account-sidebar form {
+      display: none;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .account-content :global(.account-section-head) {
+      flex-direction: column;
+    }
+  }
+</style>

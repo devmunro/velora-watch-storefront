@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 
 import { isSameOriginRequest, readForm, redirect, safeReturnPath } from '../../../lib/server/http';
+import { consumeEmailCodeLimit } from '../../../lib/server/rate-limit';
 import { createRequestSupabase } from '../../../lib/server/supabase';
 
 export const prerender = false;
@@ -28,6 +29,11 @@ export const POST: APIRoute = async (context) => {
     }
 
     const returnTo = safeReturnPath(parsed.data.returnTo);
+    const allowed = await consumeEmailCodeLimit(parsed.data.email, context.request);
+    if (!allowed) {
+      return redirect(`/account/sign-in?error=rate-limit&returnTo=${encodeURIComponent(returnTo)}`);
+    }
+
     const supabase = createRequestSupabase(context);
     const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,

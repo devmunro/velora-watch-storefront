@@ -1,0 +1,209 @@
+---
+import { ArrowLeft, ExternalLink, MapPin, Truck } from '@lucide/astro';
+
+import OrderStatus from '../../../components/OrderStatus.astro';
+import { formatMoney } from '../../../data/catalog';
+import AccountLayout from '../../../layouts/AccountLayout.astro';
+import { getCustomerOrder } from '../../../lib/server/account';
+
+export const prerender = false;
+const id = Astro.params.id ?? '';
+const order = await getCustomerOrder(Astro, id);
+if (!order) return Astro.redirect('/account/orders?error=not-found');
+
+const formatDate = (date: string) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(date));
+const address = order.shipping_address as Record<string, string | undefined>;
+const receiptUrl = order.receipt_url && order.receipt_url.startsWith('https://') ? order.receipt_url : null;
+const trackingUrl = order.tracking_url && order.tracking_url.startsWith('https://') ? order.tracking_url : null;
+---
+
+<AccountLayout title="Order details" description="View the details and status of your Velora order." active="orders">
+  <a class="back-link" href="/account/orders"><ArrowLeft size={16} /> All orders</a>
+  <div class="order-title">
+    <div>
+      <p class="eyebrow">Order {order.id.slice(0, 8).toUpperCase()}</p>
+      <h2>{formatDate(order.created_at)}</h2>
+    </div>
+    <OrderStatus status={order.status} />
+  </div>
+
+  <section class="account-card items-card">
+    <h2>Items</h2>
+    <div class="item-list">
+      {order.order_items.map((item) => (
+        <article class="order-item">
+          <div>
+            <strong>{item.product_name}</strong>
+            <span>{item.variant_name} · {item.sku}</span>
+          </div>
+          <span>Qty {item.quantity}</span>
+          <strong>{formatMoney(item.line_total, order.currency)}</strong>
+        </article>
+      ))}
+    </div>
+    <dl class="totals">
+      <div><dt>Subtotal</dt><dd>{formatMoney(order.subtotal_amount, order.currency)}</dd></div>
+      {order.discount_amount > 0 && <div><dt>Discount</dt><dd>−{formatMoney(order.discount_amount, order.currency)}</dd></div>}
+      <div><dt>Delivery</dt><dd>{order.shipping_amount ? formatMoney(order.shipping_amount, order.currency) : 'Complimentary'}</dd></div>
+      {order.tax_amount > 0 && <div><dt>Tax</dt><dd>{formatMoney(order.tax_amount, order.currency)}</dd></div>}
+      <div class="total-line"><dt>Total</dt><dd>{formatMoney(order.total_amount, order.currency)}</dd></div>
+    </dl>
+    {receiptUrl && <a class="text-link receipt-link" href={receiptUrl} target="_blank" rel="noopener noreferrer">View Stripe receipt <ExternalLink size={15} /></a>}
+  </section>
+
+  <div class="detail-grid">
+    <section class="account-card detail-card">
+      <MapPin size={21} />
+      <div>
+        <h2>Delivery address</h2>
+        <address>
+          {address.name ?? address.recipient_name}<br />
+          {address.line1 ?? address.line_1}<br />
+          {(address.line2 ?? address.line_2) && <>{address.line2 ?? address.line_2}<br /></>}
+          {address.city}<br />
+          {address.state && <>{address.state}<br /></>}
+          {address.postal_code ?? address.postcode}<br />
+          {address.country ?? 'GB'}
+        </address>
+      </div>
+    </section>
+    <section class="account-card detail-card">
+      <Truck size={21} />
+      <div>
+        <h2>Fulfilment</h2>
+        {order.tracking_number ? (
+          <>
+            <p>Tracking number<br /><strong>{order.tracking_number}</strong></p>
+            {trackingUrl && <a class="text-link" href={trackingUrl} target="_blank" rel="noopener noreferrer">Track delivery <ExternalLink size={15} /></a>}
+          </>
+        ) : (
+          <p>Tracking details will appear here when your order has been dispatched.</p>
+        )}
+      </div>
+    </section>
+  </div>
+</AccountLayout>
+
+<style>
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 2rem;
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .order-title {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .order-title .eyebrow {
+    margin-bottom: 0.3rem;
+  }
+
+  .order-title h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+  }
+
+  .items-card > h2 {
+    margin-bottom: 1.25rem !important;
+    font-size: 1.8rem !important;
+  }
+
+  .item-list {
+    border-top: 1px solid var(--line);
+  }
+
+  .order-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line);
+    padding-block: 0.9rem;
+    font-size: 0.8rem;
+  }
+
+  .order-item div {
+    display: grid;
+  }
+
+  .order-item div span,
+  .order-item > span {
+    color: var(--ink-dim);
+    font-size: 0.68rem;
+  }
+
+  .totals {
+    width: min(100%, 23rem);
+    margin: 1.5rem 0 0 auto;
+  }
+
+  .totals div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .totals dd {
+    margin: 0;
+  }
+
+  .totals .total-line {
+    margin-top: 0.4rem;
+    border-top: 1px solid var(--line);
+    padding-top: 0.8rem;
+    color: var(--ink);
+    font-size: 1rem;
+  }
+
+  .receipt-link {
+    margin-top: 1.25rem;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  .detail-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+  }
+
+  .detail-card > :global(svg) {
+    color: var(--champagne);
+  }
+
+  .detail-card h2 {
+    font-size: 1.6rem !important;
+  }
+
+  .detail-card address,
+  .detail-card p {
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    font-style: normal;
+  }
+
+  @media (max-width: 60rem) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

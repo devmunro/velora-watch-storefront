@@ -2,7 +2,7 @@ import type { APIContext } from 'astro';
 
 export function isSameOriginRequest(request: Request): boolean {
   const origin = request.headers.get('origin');
-  return origin === null || origin === new URL(request.url).origin;
+  return origin === new URL(request.url).origin;
 }
 
 export function safeReturnPath(value: FormDataEntryValue | string | null | undefined, fallback = '/account') {

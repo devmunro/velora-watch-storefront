@@ -1,47 +1,263 @@
 ---
+import { ArrowLeft, LockKeyhole, Mail } from '@lucide/astro';
+
+import ResponsiveImage from '../../components/ResponsiveImage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
 export const prerender = false;
 
-if (Astro.locals.user) {
-  return Astro.redirect('/account');
-}
+if (Astro.locals.user) return Astro.redirect('/account');
 
 const sent = Astro.url.searchParams.get('sent') === '1';
 const error = Astro.url.searchParams.get('error');
 const returnTo = Astro.url.searchParams.get('returnTo') ?? '/account';
 const configured = Astro.locals.supabaseConfigured;
+const errorMessage = error === 'rate-limit'
+  ? 'Too many codes have been requested. Please wait ten minutes and try again.'
+  : error
+    ? 'We could not complete that request. Check the details and try again.'
+    : null;
 ---
 
-<!doctype html>
-<html lang="en-GB">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="robots" content="noindex" />
-    <title>Sign in | Velora</title>
-  </head>
-  <body>
-    <main>
-      <a href="/" aria-label="Return to Velora home">VELORA</a>
-      <h1>{sent ? 'Enter your code' : 'Your Velora account'}</h1>
-      <p>{sent ? 'Enter the six-digit code sent to your email.' : 'Sign in to view orders and continue to checkout.'}</p>
+<BaseLayout
+  title="Sign in"
+  description="Sign in securely to your Velora account to manage delivery details and view orders."
+  noindex
+>
+  <section class="sign-in-grid">
+    <div class="sign-in-panel">
+      <div class="sign-in-inner">
+        <a class="back-link" href="/"><ArrowLeft size={16} /> Return to Velora</a>
+        <p class="eyebrow">Your Velora account</p>
+        <h1>{sent ? 'Enter your code.' : 'Welcome back.'}</h1>
+        <p class="sign-in-copy">
+          {sent
+            ? 'Enter the six-digit code sent to your email. It remains valid for ten minutes.'
+            : 'Use a one-time email code to access orders, delivery addresses and secure checkout.'}
+        </p>
 
-      {!configured && <p role="alert">Customer accounts are awaiting secure service configuration.</p>}
-      {error && <p role="alert">We could not complete that request. Please check the details and try again.</p>}
+        {!configured && (
+          <p class="notice" role="status">Customer accounts are awaiting secure service configuration.</p>
+        )}
+        {errorMessage && <p class="notice notice-error" role="alert">{errorMessage}</p>}
 
-      {sent ? (
-        <form method="post" action="/api/auth/verify-code">
-          <label for="code">Six-digit code</label>
-          <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required />
-          <button type="submit">Verify and continue</button>
-        </form>
-      ) : (
-        <form method="post" action="/api/auth/request-code">
-          <label for="email">Email address</label>
-          <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required />
-          <input type="hidden" name="returnTo" value={returnTo} />
-          <button type="submit" disabled={!configured}>Email me a code</button>
-        </form>
-      )}
-    </main>
-  </body>
-</html>
+        {sent ? (
+          <form class="sign-in-form" method="post" action="/api/auth/verify-code">
+            <div class="field">
+              <label for="code">Six-digit code</label>
+              <div class="input-icon">
+                <LockKeyhole size={18} aria-hidden="true" />
+                <input
+                  id="code"
+                  name="code"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxlength="6"
+                  placeholder="000000"
+                  required
+                  autofocus
+                />
+              </div>
+            </div>
+            <button class="button button-primary button-full" type="submit">Verify and continue</button>
+            <a class="restart-link" href={`/account/sign-in?returnTo=${encodeURIComponent(returnTo)}`}>Use another email address</a>
+          </form>
+        ) : (
+          <form class="sign-in-form" method="post" action="/api/auth/request-code">
+            <div class="field">
+              <label for="email">Email address</label>
+              <div class="input-icon">
+                <Mail size={18} aria-hidden="true" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  maxlength="254"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </div>
+            <input type="hidden" name="returnTo" value={returnTo} />
+            <button class="button button-primary button-full" type="submit" disabled={!configured}>Email me a code</button>
+          </form>
+        )}
+
+        <p class="privacy-copy">
+          By continuing, you acknowledge our <a href="/policies/privacy">privacy notice</a>. No password is stored.
+        </p>
+      </div>
+    </div>
+    <div class="sign-in-image">
+      <ResponsiveImage src="/images/aster.webp" alt="Silver Aster Automatic watch" loading="eager" fetchpriority="high" sizes="50vw" />
+      <div class="image-caption">
+        <p class="eyebrow">Aster Automatic</p>
+        <p>Quiet precision, made for every day.</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .sign-in-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 47rem;
+  }
+
+  .sign-in-panel {
+    display: grid;
+    place-items: center;
+    padding: clamp(2rem, 6vw, 6rem);
+  }
+
+  .sign-in-inner {
+    width: min(100%, 29rem);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 3.5rem;
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin-bottom: 1rem;
+    font-family: var(--font-serif);
+    font-size: clamp(3.5rem, 7vw, 5.7rem);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    line-height: 0.85;
+  }
+
+  .sign-in-copy {
+    color: var(--ink-soft);
+  }
+
+  .notice {
+    margin-top: 1.25rem;
+  }
+
+  .sign-in-form {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  .input-icon {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.7rem;
+    border: 1px solid var(--line-strong);
+    background: #080a0b;
+    padding-inline: 0.9rem;
+  }
+
+  .input-icon:focus-within {
+    border-color: var(--champagne);
+  }
+
+  .input-icon :global(svg) {
+    color: var(--ink-dim);
+  }
+
+  .input-icon input {
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding-inline: 0;
+    outline: none;
+  }
+
+  #code {
+    font-size: 1.25rem;
+    letter-spacing: 0.35em;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .restart-link {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    text-align: center;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+  }
+
+  .privacy-copy {
+    margin-top: 1.5rem;
+    color: var(--ink-dim);
+    font-size: 0.7rem;
+  }
+
+  .privacy-copy a {
+    color: var(--ink-soft);
+    text-decoration: underline;
+  }
+
+  .sign-in-image {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sign-in-image::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(4, 6, 7, 0.86), transparent 45%);
+    content: '';
+  }
+
+  .sign-in-image :global(picture),
+  .sign-in-image :global(img) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .sign-in-image :global(img) {
+    object-fit: cover;
+  }
+
+  .image-caption {
+    position: absolute;
+    z-index: 1;
+    right: clamp(2rem, 6vw, 5rem);
+    bottom: clamp(2rem, 6vw, 5rem);
+    left: clamp(2rem, 6vw, 5rem);
+  }
+
+  .image-caption .eyebrow {
+    margin-bottom: 0.25rem;
+  }
+
+  .image-caption p:last-child {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 2rem;
+  }
+
+  @media (max-width: 52rem) {
+    .sign-in-grid {
+      grid-template-columns: 1fr;
+      min-height: auto;
+    }
+
+    .sign-in-image {
+      display: none;
+    }
+
+    .sign-in-panel {
+      min-height: 42rem;
+    }
+  }
+</style>

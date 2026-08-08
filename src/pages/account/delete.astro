@@ -1,0 +1,91 @@
+---
+import { TriangleAlert } from '@lucide/astro';
+
+import AccountLayout from '../../layouts/AccountLayout.astro';
+
+export const prerender = false;
+const requested = Astro.url.searchParams.get('requested') === '1';
+const error = Astro.url.searchParams.get('error');
+---
+
+<AccountLayout title="Account request" description="Request deletion of your Velora customer account." active="deletion">
+  <div class="account-section-head">
+    <div>
+      <p class="eyebrow">Account privacy</p>
+      <h2>Deletion request</h2>
+      <p>Ask our client care team to review and process deletion of your account.</p>
+    </div>
+  </div>
+
+  {requested ? (
+    <div class="account-card request-complete">
+      <h2>Request received.</h2>
+      <p>We will review your request and contact you at {Astro.locals.user?.email}. You can continue using your account until the request is completed.</p>
+    </div>
+  ) : (
+    <div class="account-card deletion-card">
+      <TriangleAlert size={27} stroke-width={1.4} />
+      <div>
+        <h2>Before you request deletion</h2>
+        <p>
+          Your sign-in profile and saved addresses will be scheduled for removal. Some order and transaction records may
+          be retained where required for accounting, fraud prevention or legal obligations.
+        </p>
+        <p>This request does not cancel an order already being processed.</p>
+        {error && <p class="notice notice-error" role="alert">We could not record your request. Please try again.</p>}
+        <form method="post" action="/api/account/deletion-request">
+          <label class="confirm-field">
+            <input type="checkbox" name="confirmed" value="true" required />
+            <span>I understand and want to request account deletion.</span>
+          </label>
+          <button class="button button-secondary" type="submit">Request deletion</button>
+        </form>
+      </div>
+    </div>
+  )}
+</AccountLayout>
+
+<style>
+  .deletion-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.25rem;
+    border-color: rgba(216, 140, 131, 0.3) !important;
+  }
+
+  .deletion-card > :global(svg) {
+    color: var(--danger);
+  }
+
+  .deletion-card p,
+  .request-complete p {
+    max-width: 43rem;
+    margin-bottom: 1.25rem !important;
+  }
+
+  .deletion-card form {
+    display: grid;
+    justify-items: start;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .confirm-field {
+    display: flex;
+    align-items: start;
+    gap: 0.7rem;
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+  }
+
+  .confirm-field input {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.2rem;
+    accent-color: var(--danger);
+  }
+
+  .notice {
+    margin-top: 1rem;
+  }
+</style>

@@ -1,0 +1,21 @@
+---
+import AddressForm from '../../../components/AddressForm.astro';
+import AccountLayout from '../../../layouts/AccountLayout.astro';
+
+export const prerender = false;
+const error = Astro.url.searchParams.get('error');
+---
+
+<AccountLayout title="Add address" description="Add a delivery address to your Velora account." active="addresses">
+  <div class="account-section-head">
+    <div>
+      <p class="eyebrow">Delivery</p>
+      <h2>Add an address</h2>
+      <p>Velora currently supports delivery addresses in the United Kingdom.</p>
+    </div>
+  </div>
+  {error && <p class="notice notice-error" role="alert">Check the address details and try again.</p>}
+  <AddressForm action="/api/account/addresses" submitLabel="Save address" />
+</AccountLayout>
+
+<style>.notice { margin-bottom: 1rem; }</style>

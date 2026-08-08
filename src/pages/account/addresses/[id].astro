@@ -1,0 +1,26 @@
+---
+import AddressForm from '../../../components/AddressForm.astro';
+import AccountLayout from '../../../layouts/AccountLayout.astro';
+import { getCustomerAddresses } from '../../../lib/server/account';
+
+export const prerender = false;
+const addresses = await getCustomerAddresses(Astro);
+const address = addresses.find((entry) => entry.id === Astro.params.id);
+if (!address) return Astro.redirect('/account/addresses?error=not-found');
+const error = Astro.url.searchParams.get('error');
+---
+
+<AccountLayout title="Edit address" description="Update a delivery address in your Velora account." active="addresses">
+  <div class="account-section-head">
+    <div>
+      <p class="eyebrow">Delivery</p>
+      <h2>Edit {address.label}</h2>
+      <p>Changes apply to future orders only.</p>
+    </div>
+  </div>
+  {error === 'conflict' && <p class="notice notice-error" role="alert">This address changed in another session. Reload and try again.</p>}
+  {error && error !== 'conflict' && <p class="notice notice-error" role="alert">Check the address details and try again.</p>}
+  <AddressForm address={address} action={`/api/account/addresses/${address.id}`} submitLabel="Save changes" />
+</AccountLayout>
+
+<style>.notice { margin-bottom: 1rem; }</style>

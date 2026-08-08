@@ -1,0 +1,142 @@
+---
+import { MapPin, Plus } from '@lucide/astro';
+
+import AccountLayout from '../../../layouts/AccountLayout.astro';
+import { getCustomerAddresses } from '../../../lib/server/account';
+
+export const prerender = false;
+
+let addresses: Awaited<ReturnType<typeof getCustomerAddresses>> = [];
+let unavailable = false;
+try {
+  addresses = await getCustomerAddresses(Astro);
+} catch {
+  unavailable = true;
+}
+
+const created = Astro.url.searchParams.get('created') === '1';
+const updated = Astro.url.searchParams.get('updated') === '1';
+const removed = Astro.url.searchParams.get('removed') === '1';
+const error = Astro.url.searchParams.get('error');
+---
+
+<AccountLayout title="Delivery addresses" description="Manage delivery addresses for Velora orders." active="addresses">
+  <div class="account-section-head">
+    <div>
+      <p class="eyebrow">Delivery</p>
+      <h2>Your addresses</h2>
+      <p>Add and update the UK addresses available at checkout.</p>
+    </div>
+    <a class="button button-primary" href="/account/addresses/new"><Plus size={16} /> Add address</a>
+  </div>
+
+  {(created || updated || removed) && <p class="notice notice-success" role="status">Your delivery addresses have been updated.</p>}
+  {error === 'conflict' && <p class="notice notice-error" role="alert">That address changed in another session. Reload and try again.</p>}
+  {error && error !== 'conflict' && <p class="notice notice-error" role="alert">We could not update that address.</p>}
+  {unavailable ? (
+    <p class="notice notice-error" role="alert">Your delivery addresses are temporarily unavailable.</p>
+  ) : addresses.length ? (
+    <div class="address-grid">
+      {addresses.map((address) => (
+        <article class="account-card address-card">
+          <div class="address-card-head">
+            <MapPin size={21} stroke-width={1.4} />
+            <h2>{address.label}</h2>
+            {address.is_default && <span>Default</span>}
+          </div>
+          <address>
+            {address.recipient_name}<br />
+            {address.line_1}<br />
+            {address.line_2 && <>{address.line_2}<br /></>}
+            {address.city}<br />
+            {address.county && <>{address.county}<br /></>}
+            {address.postcode}<br />
+            United Kingdom
+          </address>
+          <div class="address-actions">
+            <a href={`/account/addresses/${address.id}`}>Edit</a>
+            <form method="post" action={`/api/account/addresses/${address.id}`}>
+              <input type="hidden" name="action" value="delete" />
+              <input type="hidden" name="version" value={address.version} />
+              <button type="submit">Remove</button>
+            </form>
+          </div>
+        </article>
+      ))}
+    </div>
+  ) : (
+    <div class="empty-state">
+      <h2>No addresses yet.</h2>
+      <p>Add a UK delivery address to make checkout quicker.</p>
+      <a class="button button-primary" href="/account/addresses/new">Add your first address</a>
+    </div>
+  )}
+</AccountLayout>
+
+<style>
+  .notice {
+    margin-bottom: 1rem;
+  }
+
+  .address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  .address-card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .address-card-head :global(svg) {
+    color: var(--champagne);
+  }
+
+  .address-card-head h2 {
+    margin: 0;
+    font-size: 1.6rem !important;
+  }
+
+  .address-card-head span {
+    margin-left: auto;
+    border: 1px solid rgba(200, 164, 118, 0.4);
+    padding: 0.2rem 0.5rem;
+    color: var(--champagne-pale);
+    font-size: 0.6rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  address {
+    min-height: 9.4rem;
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    font-style: normal;
+  }
+
+  .address-actions {
+    display: flex;
+    gap: 1rem;
+    border-top: 1px solid var(--line);
+    padding-top: 0.9rem;
+  }
+
+  .address-actions a,
+  .address-actions button {
+    border: 0;
+    border-bottom: 1px solid var(--line-strong);
+    background: transparent;
+    padding: 0;
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+  }
+
+  @media (max-width: 66rem) {
+    .address-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

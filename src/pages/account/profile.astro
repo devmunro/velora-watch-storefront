@@ -1,0 +1,84 @@
+---
+import AccountLayout from '../../layouts/AccountLayout.astro';
+import { getCustomerProfile } from '../../lib/server/account';
+
+export const prerender = false;
+
+let profile: Awaited<ReturnType<typeof getCustomerProfile>> | null = null;
+let unavailable = false;
+try {
+  profile = await getCustomerProfile(Astro);
+} catch {
+  unavailable = true;
+}
+
+const updated = Astro.url.searchParams.get('updated') === '1';
+const error = Astro.url.searchParams.get('error');
+---
+
+<AccountLayout title="Profile" description="Manage your Velora customer profile." active="profile">
+  <div class="account-section-head">
+    <div>
+      <p class="eyebrow">Personal details</p>
+      <h2>Your profile</h2>
+      <p>Keep your contact information current for order updates and delivery.</p>
+    </div>
+  </div>
+
+  {updated && <p class="notice notice-success" role="status">Your profile has been updated.</p>}
+  {error === 'conflict' && <p class="notice notice-error" role="alert">This profile changed in another session. Reload and try again.</p>}
+  {error && error !== 'conflict' && <p class="notice notice-error" role="alert">We could not update your profile. Check the details and try again.</p>}
+  {unavailable ? (
+    <p class="notice notice-error" role="alert">Your profile is temporarily unavailable.</p>
+  ) : (
+    <form class="account-card profile-form" method="post" action="/api/account/profile">
+      <div class="form-grid">
+        <div class="field">
+          <label for="first-name">First name</label>
+          <input id="first-name" name="firstName" autocomplete="given-name" maxlength="80" value={profile?.first_name ?? ''} />
+        </div>
+        <div class="field">
+          <label for="last-name">Last name</label>
+          <input id="last-name" name="lastName" autocomplete="family-name" maxlength="80" value={profile?.last_name ?? ''} />
+        </div>
+        <div class="field field-wide">
+          <label for="phone">Telephone</label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="32" value={profile?.phone ?? ''} />
+          <small>Used only when needed for delivery or an order query.</small>
+        </div>
+        <div class="field field-wide">
+          <label for="email">Email address</label>
+          <input id="email" type="email" value={Astro.locals.user?.email ?? ''} disabled />
+          <small>Your sign-in email is managed through secure email-code authentication.</small>
+        </div>
+      </div>
+      <input type="hidden" name="version" value={profile?.version ?? 1} />
+      <button class="button button-primary" type="submit">Save profile</button>
+    </form>
+  )}
+</AccountLayout>
+
+<style>
+  .notice {
+    margin-bottom: 1rem;
+  }
+
+  .profile-form {
+    display: grid;
+    gap: 1.75rem;
+  }
+
+  .field small {
+    color: var(--ink-dim);
+    font-size: 0.68rem;
+  }
+
+  input:disabled {
+    color: var(--ink-dim);
+    cursor: not-allowed;
+  }
+
+  .profile-form .button {
+    width: max-content;
+  }
+</style>
