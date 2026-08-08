@@ -1,0 +1,486 @@
+---
+import { ChevronDown, Menu, Search, ShoppingBag, UserRound, X } from '@lucide/astro';
+
+interface Props {
+  pathname: string;
+  signedIn?: boolean;
+}
+
+const { pathname, signedIn = false } = Astro.props;
+const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
+---
+
+<div class="shipping-bar">Complimentary UK shipping on all orders over £100</div>
+<header class="site-header" data-site-header>
+  <div class="header-shell shell">
+    <a class="wordmark" href="/" aria-label="Velora home">Velora</a>
+
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      <a class:list={[{ active: isActive('/watches') }]} href="/watches">Watches</a>
+      <a class:list={[{ active: isActive('/collections') }]} href="/collections">
+        Collections <ChevronDown size={14} stroke-width={1.5} aria-hidden="true" />
+      </a>
+      <a class:list={[{ active: isActive('/accessories') }]} href="/accessories">Accessories</a>
+      <a class:list={[{ active: isActive('/about') }]} href="/about">About us</a>
+      <a class:list={[{ active: isActive('/journal') }]} href="/journal">Journal</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="icon-button" type="button" data-search-open aria-label="Search Velora">
+        <Search size={22} stroke-width={1.6} aria-hidden="true" />
+      </button>
+      <a class="icon-button" href="/account" aria-label={signedIn ? 'View your account' : 'Sign in'}>
+        <UserRound size={22} stroke-width={1.55} aria-hidden="true" />
+        {signedIn && <span class="signed-in-dot"><span class="sr-only">Signed in</span></span>}
+      </a>
+      <a class="icon-button cart-button" href="/cart" aria-label="View shopping bag">
+        <ShoppingBag size={23} stroke-width={1.55} aria-hidden="true" />
+        <span class="cart-count" data-cart-count hidden>0</span>
+      </a>
+      <button class="icon-button menu-button" type="button" data-nav-open aria-label="Open menu">
+        <Menu size={24} stroke-width={1.5} aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-panel" data-mobile-panel hidden>
+    <div class="mobile-panel-head shell">
+      <span class="wordmark">Velora</span>
+      <button class="icon-button" type="button" data-nav-close aria-label="Close menu">
+        <X size={25} stroke-width={1.5} aria-hidden="true" />
+      </button>
+    </div>
+    <nav class="mobile-nav shell" aria-label="Mobile navigation">
+      <a href="/watches">Watches</a>
+      <a href="/collections">Collections</a>
+      <a href="/accessories">Accessories</a>
+      <a href="/about">About us</a>
+      <a href="/journal">Journal</a>
+      <a href="/account">{signedIn ? 'Your account' : 'Sign in'}</a>
+    </nav>
+  </div>
+</header>
+
+<dialog class="search-dialog" data-search-dialog aria-labelledby="search-title">
+  <div class="search-dialog-inner">
+    <div class="search-head">
+      <div>
+        <p class="eyebrow">Search Velora</p>
+        <h2 id="search-title">What are you looking for?</h2>
+      </div>
+      <button class="icon-button" type="button" data-search-close aria-label="Close search">
+        <X size={25} stroke-width={1.5} aria-hidden="true" />
+      </button>
+    </div>
+    <label class="search-field">
+      <span class="sr-only">Search products and articles</span>
+      <Search size={21} stroke-width={1.5} aria-hidden="true" />
+      <input type="search" autocomplete="off" placeholder="Search watches, collections and stories" data-search-input />
+    </label>
+    <div class="search-results" data-search-results aria-live="polite">
+      <p>Begin typing to explore Velora.</p>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  import { journalPosts, products } from '../data/catalog';
+  import { cartCount, readCart } from '../lib/cart';
+
+  const header = document.querySelector<HTMLElement>('[data-site-header]');
+  const panel = document.querySelector<HTMLElement>('[data-mobile-panel]');
+  const navOpen = document.querySelector<HTMLButtonElement>('[data-nav-open]');
+  const navClose = document.querySelector<HTMLButtonElement>('[data-nav-close]');
+
+  function openNavigation() {
+    if (!panel) return;
+    panel.hidden = false;
+    document.body.classList.add('nav-open');
+    navClose?.focus();
+  }
+
+  function closeNavigation() {
+    if (!panel) return;
+    panel.hidden = true;
+    document.body.classList.remove('nav-open');
+    navOpen?.focus();
+  }
+
+  navOpen?.addEventListener('click', openNavigation);
+  navClose?.addEventListener('click', closeNavigation);
+
+  const searchDialog = document.querySelector<HTMLDialogElement>('[data-search-dialog]');
+  const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
+  const searchResults = document.querySelector<HTMLElement>('[data-search-results]');
+
+  document.querySelector('[data-search-open]')?.addEventListener('click', () => {
+    searchDialog?.showModal();
+    document.body.classList.add('dialog-open');
+    requestAnimationFrame(() => searchInput?.focus());
+  });
+
+  function closeSearch() {
+    searchDialog?.close();
+    document.body.classList.remove('dialog-open');
+  }
+
+  document.querySelector('[data-search-close]')?.addEventListener('click', closeSearch);
+  searchDialog?.addEventListener('click', (event) => {
+    if (event.target === searchDialog) closeSearch();
+  });
+  searchDialog?.addEventListener('close', () => document.body.classList.remove('dialog-open'));
+
+  const searchIndex = [
+    ...products.map((product) => ({
+      title: product.name,
+      copy: product.summary,
+      href: `/watches/${product.slug}`,
+      type: 'Watch',
+    })),
+    ...journalPosts.map((post) => ({
+      title: post.title,
+      copy: post.excerpt,
+      href: `/journal/${post.slug}`,
+      type: 'Journal',
+    })),
+  ];
+
+  searchInput?.addEventListener('input', () => {
+    if (!searchResults) return;
+    const term = searchInput.value.trim().toLocaleLowerCase('en-GB');
+    searchResults.replaceChildren();
+
+    if (term.length < 2) {
+      const prompt = document.createElement('p');
+      prompt.textContent = 'Enter at least two characters to search.';
+      searchResults.appendChild(prompt);
+      return;
+    }
+
+    const matches = searchIndex.filter((item) =>
+      `${item.title} ${item.copy} ${item.type}`.toLocaleLowerCase('en-GB').includes(term),
+    );
+
+    if (!matches.length) {
+      const empty = document.createElement('p');
+      empty.textContent = 'No results found. Try another search.';
+      searchResults.appendChild(empty);
+      return;
+    }
+
+    for (const match of matches.slice(0, 8)) {
+      const link = document.createElement('a');
+      link.href = match.href;
+      const type = document.createElement('span');
+      type.textContent = match.type;
+      const title = document.createElement('strong');
+      title.textContent = match.title;
+      link.appendChild(type);
+      link.appendChild(title);
+      searchResults.appendChild(link);
+    }
+  });
+
+  function updateCount() {
+    const countElement = document.querySelector<HTMLElement>('[data-cart-count]');
+    if (!countElement) return;
+    const count = cartCount(readCart());
+    countElement.textContent = String(count);
+    countElement.hidden = count === 0;
+  }
+
+  updateCount();
+  window.addEventListener('velora:cart-updated', updateCount);
+
+  let lastY = window.scrollY;
+  window.addEventListener(
+    'scroll',
+    () => {
+      const currentY = window.scrollY;
+      header?.classList.toggle('header-hidden', currentY > lastY && currentY > 180);
+      header?.classList.toggle('header-scrolled', currentY > 16);
+      lastY = currentY;
+    },
+    { passive: true },
+  );
+</script>
+
+<style>
+  .shipping-bar {
+    display: grid;
+    min-height: 2.25rem;
+    place-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: linear-gradient(90deg, #101111, #171717, #101111);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .site-header {
+    position: sticky;
+    z-index: 50;
+    top: 0;
+    border-bottom: 1px solid var(--line);
+    background: rgba(5, 7, 8, 0.94);
+    backdrop-filter: blur(18px);
+    transition: transform 220ms ease, background-color 220ms ease;
+  }
+
+  .site-header.header-hidden {
+    transform: translateY(-100%);
+  }
+
+  .header-shell {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    min-height: 5.35rem;
+  }
+
+  .wordmark {
+    width: max-content;
+    font-size: 1.35rem;
+    font-weight: 500;
+    letter-spacing: 0.38em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .desktop-nav {
+    display: flex;
+    align-items: center;
+    gap: clamp(1.5rem, 3vw, 2.8rem);
+  }
+
+  .desktop-nav a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 5.35rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .desktop-nav a::after {
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 1px;
+    background: var(--champagne);
+    content: '';
+    opacity: 0;
+    transform: scaleX(0.5);
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+
+  .desktop-nav a:hover::after,
+  .desktop-nav a.active::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .header-actions {
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .icon-button {
+    position: relative;
+    display: grid;
+    width: 2.65rem;
+    height: 2.65rem;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+  }
+
+  .icon-button:hover {
+    color: var(--champagne-pale);
+  }
+
+  .cart-count {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding-inline: 0.2rem;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #070707;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+
+  .signed-in-dot {
+    position: absolute;
+    right: 0.32rem;
+    bottom: 0.32rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border: 1px solid var(--surface);
+    border-radius: 50%;
+    background: var(--champagne);
+  }
+
+  .menu-button {
+    display: none;
+  }
+
+  .mobile-panel {
+    position: fixed;
+    z-index: 70;
+    inset: 0;
+    min-height: 100dvh;
+    background: #050708;
+  }
+
+  .mobile-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 5.35rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .mobile-nav {
+    display: grid;
+    padding-block: 2rem;
+  }
+
+  .mobile-nav a {
+    padding-block: 1.05rem;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 9vw, 3.5rem);
+    line-height: 1;
+  }
+
+  .search-dialog {
+    width: min(52rem, calc(100% - 2rem));
+    max-width: none;
+    margin: auto;
+    border: 1px solid var(--line-strong);
+    background: #080a0b;
+    color: var(--ink);
+    padding: 0;
+    box-shadow: var(--shadow);
+  }
+
+  .search-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(5px);
+  }
+
+  .search-dialog-inner {
+    padding: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .search-head {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .search-head .eyebrow {
+    margin-bottom: 0.4rem;
+  }
+
+  .search-head h2 {
+    margin-bottom: 1.5rem;
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .search-field {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.8rem;
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .search-field input {
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 1rem 0;
+    font-size: 1.05rem;
+    outline: none;
+  }
+
+  .search-results {
+    display: grid;
+    max-height: 22rem;
+    overflow: auto;
+    padding-top: 1rem;
+  }
+
+  .search-results p {
+    color: var(--ink-soft);
+  }
+
+  .search-results :global(a) {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .search-results :global(a:hover strong) {
+    color: var(--champagne-pale);
+  }
+
+  .search-results :global(span) {
+    color: var(--champagne);
+    font-size: 0.65rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .search-results :global(strong) {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    font-weight: 400;
+  }
+
+  @media (max-width: 70rem) {
+    .header-shell {
+      grid-template-columns: 1fr auto;
+    }
+
+    .desktop-nav {
+      display: none;
+    }
+
+    .menu-button {
+      display: grid;
+    }
+  }
+
+  @media (max-width: 32rem) {
+    .header-actions .icon-button:nth-child(2) {
+      display: none;
+    }
+
+    .shipping-bar {
+      padding-inline: 1rem;
+      font-size: 0.61rem;
+    }
+  }
+</style>

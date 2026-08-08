@@ -1,0 +1,97 @@
+---
+import { ArrowUpRight } from '@lucide/astro';
+
+import { formatMoney, type Product } from '../data/catalog';
+import ResponsiveImage from './ResponsiveImage.astro';
+
+interface Props {
+  product: Product;
+  headingLevel?: 'h2' | 'h3';
+}
+
+const { product, headingLevel = 'h3' } = Astro.props;
+const Heading = headingLevel;
+const startingPrice = Math.min(...product.variants.map((variant) => variant.priceAmount));
+---
+
+<article class="product-card">
+  <a href={`/watches/${product.slug}`} aria-label={`View ${product.name}`}>
+    <div class="card-image product-card-image">
+      <ResponsiveImage src={product.image} alt={product.imageAlt} sizes="(max-width: 640px) 100vw, 33vw" />
+      <span class="card-arrow" aria-hidden="true"><ArrowUpRight size={18} stroke-width={1.5} /></span>
+    </div>
+    <div class="product-card-meta">
+      <div>
+        <p class="product-collection">{product.collectionName}</p>
+        <Heading>{product.name}</Heading>
+      </div>
+      <p class="product-price">From {formatMoney(startingPrice)}</p>
+    </div>
+  </a>
+</article>
+
+<style>
+  .product-card-image {
+    aspect-ratio: 1;
+  }
+
+  .card-arrow {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    background: rgba(5, 7, 8, 0.78);
+    transition: border-color 180ms ease;
+  }
+
+  a:hover .card-arrow {
+    border-color: var(--champagne);
+  }
+
+  .product-card-meta {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1.25rem;
+  }
+
+  .product-collection {
+    margin-bottom: 0.25rem;
+    color: var(--champagne);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  h2,
+  h3 {
+    margin-bottom: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(1.55rem, 2vw, 2rem);
+    font-weight: 400;
+    line-height: 1.1;
+  }
+
+  .product-price {
+    margin: 0.35rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 40rem) {
+    .product-card-meta {
+      display: grid;
+    }
+
+    .product-price {
+      margin-top: 0;
+    }
+  }
+</style>

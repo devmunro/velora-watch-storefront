@@ -1,0 +1,95 @@
+---
+import { ArrowLeft } from '@lucide/astro';
+
+import ResponsiveImage from '../../components/ResponsiveImage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublishedJournalPost } from '../../lib/server/content';
+
+const slug = Astro.params.slug ?? '';
+const post = await getPublishedJournalPost(slug);
+if (!post) return Astro.redirect('/404');
+const date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(
+  new Date(post.publishedAt),
+);
+---
+
+<BaseLayout title={post.title} description={post.excerpt} image={post.image}>
+  <article>
+    <header class="article-header narrow">
+      <a class="back-link" href="/journal"><ArrowLeft size={16} /> Journal</a>
+      <p class="eyebrow">{date}</p>
+      <h1>{post.title}</h1>
+      <p class="article-deck">{post.excerpt}</p>
+    </header>
+    <div class="article-image">
+      <ResponsiveImage
+        src={post.image}
+        alt={post.imageAlt}
+        loading="eager"
+        fetchpriority="high"
+        sizes="100vw"
+      />
+    </div>
+    <div class="rich-text narrow article-body">
+      {post.body.map((paragraph, index) => index === 1 ? <><h2>A considered perspective</h2><p>{paragraph}</p></> : <p>{paragraph}</p>)}
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .article-header {
+    padding-block: clamp(4rem, 9vw, 8rem);
+    text-align: center;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 3rem;
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .article-header h1 {
+    margin-bottom: 1.4rem;
+    font-family: var(--font-serif);
+    font-size: clamp(3.4rem, 8vw, 7rem);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+  }
+
+  .article-deck {
+    max-width: 37rem;
+    margin-inline: auto;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+  }
+
+  .article-image,
+  .article-image :global(picture) {
+    height: min(65vw, 51rem);
+  }
+
+  .article-image :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .article-body {
+    padding-block: clamp(4rem, 8vw, 7rem);
+  }
+
+  .article-body > :global(p:first-child)::first-letter {
+    float: left;
+    margin: 0.1rem 0.45rem 0 0;
+    color: var(--champagne-pale);
+    font-family: var(--font-serif);
+    font-size: 4.5rem;
+    line-height: 0.72;
+  }
+</style>

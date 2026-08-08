@@ -1,0 +1,150 @@
+---
+import { ArrowUpRight } from '@lucide/astro';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="footer-main shell">
+    <div class="footer-brand">
+      <a class="footer-wordmark" href="/">Velora</a>
+      <p>Considered watches for every hour that matters.</p>
+      <a class="client-care" href="mailto:care@velora-watches.com">
+        care@velora-watches.com <ArrowUpRight size={16} stroke-width={1.5} aria-hidden="true" />
+      </a>
+    </div>
+    <nav aria-label="Shop">
+      <h2>Shop</h2>
+      <a href="/watches">All watches</a>
+      <a href="/collections">Collections</a>
+      <a href="/accessories">Accessories</a>
+      <a href="/cart">Shopping bag</a>
+    </nav>
+    <nav aria-label="Velora">
+      <h2>Velora</h2>
+      <a href="/about">Our story</a>
+      <a href="/journal">Journal</a>
+      <a href="/account">Your account</a>
+      <a href="/policies/warranty">Warranty</a>
+    </nav>
+    <nav aria-label="Client care">
+      <h2>Client care</h2>
+      <a href="/policies/shipping">Shipping</a>
+      <a href="/policies/returns">Returns</a>
+      <a href="/policies/privacy">Privacy</a>
+      <a href="/policies/terms">Terms</a>
+    </nav>
+  </div>
+  <div class="footer-bottom shell">
+    <p>© {year} Velora. All rights reserved.</p>
+    <p>United Kingdom · GBP</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--line);
+    background: #030405;
+  }
+
+  .footer-main {
+    display: grid;
+    grid-template-columns: 2.2fr repeat(3, 1fr);
+    gap: clamp(2.5rem, 6vw, 6rem);
+    padding-block: clamp(4rem, 8vw, 7rem);
+  }
+
+  .footer-brand p {
+    max-width: 23rem;
+    margin: 1.2rem 0 2rem;
+    color: var(--ink-soft);
+  }
+
+  .footer-wordmark {
+    font-size: 1.6rem;
+    font-weight: 500;
+    letter-spacing: 0.38em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .client-care {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--line-strong);
+    padding-bottom: 0.2rem;
+    color: var(--champagne-pale);
+    font-size: 0.82rem;
+  }
+
+  nav {
+    display: grid;
+    align-content: start;
+    gap: 0.7rem;
+  }
+
+  nav h2 {
+    margin-bottom: 0.75rem;
+    color: var(--champagne);
+    font-size: 0.69rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  nav a {
+    width: max-content;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+  }
+
+  nav a:hover {
+    color: var(--ink);
+  }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid var(--line);
+    padding-block: 1.4rem;
+    color: var(--ink-dim);
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+  }
+
+  .footer-bottom p {
+    margin: 0;
+  }
+
+  @media (max-width: 56rem) {
+    .footer-main {
+      grid-template-columns: 2fr repeat(2, 1fr);
+    }
+
+    .footer-main nav:last-child {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .footer-main {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer-brand {
+      grid-column: 1 / -1;
+    }
+
+    .footer-main nav:last-child {
+      grid-column: auto;
+    }
+
+    .footer-bottom {
+      align-items: start;
+      flex-direction: column;
+    }
+  }
+</style>

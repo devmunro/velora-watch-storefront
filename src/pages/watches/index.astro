@@ -1,0 +1,55 @@
+---
+import ProductCard from '../../components/ProductCard.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublishedProducts } from '../../lib/server/content';
+
+const products = await getPublishedProducts();
+---
+
+<BaseLayout
+  title="Watches"
+  description="Explore the complete Velora watch collection, from balanced chronographs to refined automatic and GMT timepieces."
+>
+  <header class="page-intro">
+    <div class="shell">
+      <p class="eyebrow">The complete collection</p>
+      <h1 class="page-title">Watches with purpose.</h1>
+      <p class="section-copy">Distinct in character, united by restraint, legibility and enduring materials.</p>
+    </div>
+  </header>
+  <section class="section">
+    <div class="shell">
+      <div class="catalogue-bar">
+        <p>{products.length} timepieces</p>
+        <a href="/collections">Explore by collection</a>
+      </div>
+      <div class="grid grid-3">
+        {products.map((product) => <ProductCard product={product} headingLevel="h2" />)}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .catalogue-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .catalogue-bar p {
+    margin: 0;
+  }
+
+  .catalogue-bar a {
+    color: var(--champagne-pale);
+  }
+</style>

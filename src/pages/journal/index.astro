@@ -1,0 +1,116 @@
+---
+import { ArrowRight } from '@lucide/astro';
+
+import ResponsiveImage from '../../components/ResponsiveImage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublishedJournal } from '../../lib/server/content';
+
+const posts = await getPublishedJournal();
+const formatDate = (date: string) =>
+  new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(date));
+---
+
+<BaseLayout
+  title="Journal"
+  description="Read the Velora Journal—notes on watch design, mechanical movements, care and the considered use of time."
+>
+  <header class="page-intro">
+    <div class="shell">
+      <p class="eyebrow">The Velora journal</p>
+      <h1 class="page-title">Notes on time.</h1>
+      <p class="section-copy">Design, movements and the details that make a watch part of everyday life.</p>
+    </div>
+  </header>
+  <section class="section">
+    <div class="shell journal-list">
+      {posts.map((post, index) => (
+        <article class:list={['journal-card', { featured: index === 0 }]}>
+          <a class="journal-card-image card-image" href={`/journal/${post.slug}`}>
+            <ResponsiveImage src={post.image} alt={post.imageAlt} sizes={index === 0 ? '100vw' : '(max-width: 768px) 100vw, 50vw'} />
+          </a>
+          <div class="journal-card-copy">
+            <p class="journal-date">{formatDate(post.publishedAt)}</p>
+            <h2><a href={`/journal/${post.slug}`}>{post.title}</a></h2>
+            <p>{post.excerpt}</p>
+            <a class="text-link" href={`/journal/${post.slug}`}>Read the story <ArrowRight size={16} /></a>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .journal-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(3rem, 6vw, 6rem) clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .journal-card.featured {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    align-items: center;
+    gap: clamp(2rem, 7vw, 7rem);
+  }
+
+  .journal-card-image {
+    display: block;
+    aspect-ratio: 1.15;
+  }
+
+  .journal-card.featured .journal-card-image {
+    aspect-ratio: 1.45;
+  }
+
+  .journal-card-image :global(picture),
+  .journal-card-image :global(img) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .journal-card-image :global(img) {
+    object-fit: cover;
+  }
+
+  .journal-card-copy {
+    padding-top: 1.4rem;
+  }
+
+  .journal-date {
+    margin-bottom: 0.6rem;
+    color: var(--champagne);
+    font-size: 0.67rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin-bottom: 0.7rem;
+    font-family: var(--font-serif);
+    font-size: clamp(2.1rem, 4vw, 4rem);
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .journal-card:not(.featured) h2 {
+    font-size: clamp(2rem, 3vw, 3rem);
+  }
+
+  .journal-card-copy > p:not(.journal-date) {
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 50rem) {
+    .journal-list,
+    .journal-card.featured {
+      grid-template-columns: 1fr;
+    }
+
+    .journal-card.featured {
+      grid-column: auto;
+      gap: 0;
+    }
+  }
+</style>

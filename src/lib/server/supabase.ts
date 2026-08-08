@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import type { APIContext } from 'astro';
 
 import {
+  getRuntimeEnvironment,
+  hasSupabaseConfiguration,
   requireSupabaseAdminEnvironment,
   requireSupabaseEnvironment,
 } from './runtime-env';
@@ -62,6 +64,23 @@ export function createSupabaseAdmin() {
       persistSession: false,
     },
   });
+}
+
+export function createPublicSupabase() {
+  const environment = getRuntimeEnvironment();
+  if (!hasSupabaseConfiguration(environment)) return null;
+
+  return createClient(
+    environment.PUBLIC_SUPABASE_URL as string,
+    environment.PUBLIC_SUPABASE_PUBLISHABLE_KEY as string,
+    {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+      },
+    },
+  );
 }
 
 export async function getStaffRole(userId: string) {

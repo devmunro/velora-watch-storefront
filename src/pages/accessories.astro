@@ -1,0 +1,102 @@
+---
+import ResponsiveImage from '../components/ResponsiveImage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Accessories"
+  description="Discover Velora watch accessories and care guidance, designed to preserve comfort, character and performance."
+>
+  <header class="page-intro">
+    <div class="shell">
+      <p class="eyebrow">Complete the experience</p>
+      <h1 class="page-title">Care, considered.</h1>
+      <p class="section-copy">Thoughtful essentials for wearing, storing and caring for your Velora watch.</p>
+    </div>
+  </header>
+  <section class="section">
+    <div class="shell accessory-grid">
+      <article>
+        <div class="card-image accessory-image">
+          <ResponsiveImage src="/images/meridian.webp" alt="Meridian Chronograph on black leather" sizes="(max-width: 768px) 100vw, 50vw" />
+        </div>
+        <p class="eyebrow">Interchangeable straps</p>
+        <h2>Change the character.</h2>
+        <p>Additional leather and steel options are being prepared for the Velora collection.</p>
+      </article>
+      <article>
+        <div class="card-image accessory-image">
+          <ResponsiveImage src="/images/aster.webp" alt="Aster Automatic in silver steel" sizes="(max-width: 768px) 100vw, 50vw" />
+        </div>
+        <p class="eyebrow">Watch care</p>
+        <h2>Keep time beautifully.</h2>
+        <p>Use a clean microfibre cloth, avoid sudden impacts and rinse water-resistant steel after contact with salt water.</p>
+      </article>
+    </div>
+  </section>
+  <section class="care-note section section-muted">
+    <div class="narrow">
+      <p class="eyebrow">Client care</p>
+      <h2 class="section-title">Need advice?</h2>
+      <p>Our client care team can help with fit, maintenance and choosing the right finish for your watch.</p>
+      <a class="button button-secondary" href="mailto:care@velora-watches.com">Contact client care</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .accessory-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .accessory-image {
+    aspect-ratio: 1.1;
+    margin-bottom: 1.5rem;
+  }
+
+  .accessory-image :global(picture),
+  .accessory-image :global(img) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .accessory-image :global(img) {
+    object-fit: cover;
+  }
+
+  article .eyebrow {
+    margin-bottom: 0.5rem;
+  }
+
+  article h2 {
+    margin-bottom: 0.6rem;
+    font-family: var(--font-serif);
+    font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-weight: 400;
+  }
+
+  article > p:last-child,
+  .care-note p:not(.eyebrow) {
+    color: var(--ink-soft);
+  }
+
+  .care-note {
+    text-align: center;
+  }
+
+  .care-note .section-title {
+    margin-bottom: 1rem;
+  }
+
+  .care-note .button {
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 42rem) {
+    .accessory-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

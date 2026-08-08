@@ -1,0 +1,398 @@
+---
+import { LockKeyhole } from '@lucide/astro';
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPublishedProducts } from '../lib/server/content';
+
+const products = await getPublishedProducts();
+const catalogue = products.flatMap((product) =>
+  product.variants.map((variant) => ({
+    variantId: variant.id,
+    productName: product.name,
+    productSlug: product.slug,
+    variantName: variant.name,
+    sku: variant.sku,
+    image: product.image,
+    imageAlt: product.imageAlt,
+    priceAmount: variant.priceAmount,
+    currency: variant.currency,
+  })),
+);
+---
+
+<BaseLayout
+  title="Shopping bag"
+  description="Review the Velora watches in your shopping bag before secure checkout."
+  noindex
+>
+  <header class="page-intro cart-intro">
+    <div class="shell">
+      <p class="eyebrow">Your selection</p>
+      <h1 class="page-title">Shopping bag.</h1>
+    </div>
+  </header>
+  <section class="section cart-section">
+    <div
+      class="shell cart-layout"
+      data-cart-page
+      data-catalogue={JSON.stringify(catalogue)}
+      data-signed-in={String(Boolean(Astro.locals.user))}
+    >
+      <div class="cart-lines" data-cart-lines aria-live="polite"></div>
+      <aside class="cart-summary" data-cart-summary hidden>
+        <p class="eyebrow">Order summary</p>
+        <div class="summary-row"><span>Subtotal</span><strong data-cart-subtotal>£0</strong></div>
+        <div class="summary-row"><span>Delivery</span><strong>Complimentary</strong></div>
+        <div class="summary-total"><span>Total</span><strong data-cart-total>£0</strong></div>
+        <p class="tax-note">Prices include applicable UK VAT.</p>
+        <button class="button button-primary button-full" type="button" data-checkout>
+          Continue to secure checkout
+        </button>
+        <p class="secure-note"><LockKeyhole size={14} /> Secure payment powered by Stripe</p>
+        <p class="checkout-message" data-checkout-message aria-live="polite"></p>
+      </aside>
+    </div>
+  </section>
+
+  <script>
+    import { readCart, writeCart, type CartLine } from '../lib/cart';
+
+    type CatalogueItem = {
+      variantId: string;
+      productName: string;
+      productSlug: string;
+      variantName: string;
+      sku: string;
+      image: string;
+      imageAlt: string;
+      priceAmount: number;
+      currency: string;
+    };
+
+    const page = document.querySelector<HTMLElement>('[data-cart-page]');
+    const linesElement = document.querySelector<HTMLElement>('[data-cart-lines]');
+    const summary = document.querySelector<HTMLElement>('[data-cart-summary]');
+    const subtotal = document.querySelector<HTMLElement>('[data-cart-subtotal]');
+    const total = document.querySelector<HTMLElement>('[data-cart-total]');
+    const checkout = document.querySelector<HTMLButtonElement>('[data-checkout]');
+    const checkoutMessage = document.querySelector<HTMLElement>('[data-checkout-message]');
+    const catalogue: CatalogueItem[] = JSON.parse(page?.dataset.catalogue ?? '[]');
+    const signedIn = page?.dataset.signedIn === 'true';
+
+    const money = (amount: number) =>
+      new Intl.NumberFormat('en-GB', {
+        style: 'currency',
+        currency: 'GBP',
+        maximumFractionDigits: 0,
+      }).format(amount / 100);
+
+    function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      return node;
+    }
+
+    function emptyCart() {
+      const empty = element('div', 'empty-state');
+      const title = element('h2');
+      title.textContent = 'Your bag is waiting.';
+      const copy = element('p');
+      copy.textContent = 'Explore the collection and choose the Velora watch that feels like yours.';
+      const link = element('a', 'button button-primary');
+      link.href = '/watches';
+      link.textContent = 'Explore watches';
+      empty.appendChild(title);
+      empty.appendChild(copy);
+      empty.appendChild(link);
+      return empty;
+    }
+
+    function render() {
+      if (!linesElement || !summary) return;
+      const cart = readCart();
+      const valid = cart.flatMap((line) => {
+        const item = catalogue.find((entry) => entry.variantId === line.variantId);
+        return item ? [{ line, item }] : [];
+      });
+
+      linesElement.replaceChildren();
+      if (!valid.length) {
+        linesElement.appendChild(emptyCart());
+        summary.hidden = true;
+        return;
+      }
+
+      let amount = 0;
+      for (const { line, item } of valid) {
+        amount += item.priceAmount * line.quantity;
+        const article = element('article', 'cart-line');
+        const imageLink = element('a', 'cart-line-image');
+        imageLink.href = `/watches/${item.productSlug}`;
+        const image = element('img');
+        image.src = item.image;
+        image.alt = item.imageAlt;
+        image.width = 220;
+        image.height = 220;
+        image.loading = 'lazy';
+        imageLink.appendChild(image);
+
+        const details = element('div', 'cart-line-details');
+        const heading = element('h2');
+        const productLink = element('a');
+        productLink.href = `/watches/${item.productSlug}`;
+        productLink.textContent = item.productName;
+        heading.appendChild(productLink);
+        const variant = element('p', 'cart-line-variant');
+        variant.textContent = `${item.variantName} · ${item.sku}`;
+
+        const controls = element('div', 'cart-line-controls');
+        const selectLabel = element('label');
+        const labelText = element('span', 'sr-only');
+        labelText.textContent = `Quantity for ${item.productName}`;
+        const select = element('select');
+        select.dataset.quantityFor = item.variantId;
+        for (let value = 1; value <= 5; value += 1) {
+          const option = document.createElement('option');
+          option.value = String(value);
+          option.textContent = `Qty ${value}`;
+          option.selected = value === line.quantity;
+          select.appendChild(option);
+        }
+        selectLabel.appendChild(labelText);
+        selectLabel.appendChild(select);
+
+        const remove = element('button');
+        remove.type = 'button';
+        remove.dataset.remove = item.variantId;
+        remove.textContent = 'Remove';
+        controls.appendChild(selectLabel);
+        controls.appendChild(remove);
+        details.appendChild(heading);
+        details.appendChild(variant);
+        details.appendChild(controls);
+
+        const linePrice = element('p', 'cart-line-price');
+        linePrice.textContent = money(item.priceAmount * line.quantity);
+        article.appendChild(imageLink);
+        article.appendChild(details);
+        article.appendChild(linePrice);
+        linesElement.appendChild(article);
+      }
+
+      if (subtotal) subtotal.textContent = money(amount);
+      if (total) total.textContent = money(amount);
+      summary.hidden = false;
+    }
+
+    linesElement?.addEventListener('change', (event) => {
+      const select = (event.target as HTMLElement).closest('[data-quantity-for]') as HTMLSelectElement | null;
+      if (!select) return;
+      const variantId = select.dataset.quantityFor;
+      const lines = readCart().map((line) =>
+        line.variantId === variantId ? { ...line, quantity: Number(select.value) } : line,
+      );
+      writeCart(lines);
+      render();
+    });
+
+    linesElement?.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-remove]');
+      if (!button) return;
+      writeCart(readCart().filter((line) => line.variantId !== button.dataset.remove));
+      render();
+    });
+
+    checkout?.addEventListener('click', async () => {
+      if (!signedIn) {
+        window.location.assign('/account/sign-in?returnTo=%2Fcart');
+        return;
+      }
+
+      checkout.disabled = true;
+      if (checkoutMessage) checkoutMessage.textContent = 'Preparing secure checkout…';
+      try {
+        const response = await fetch('/api/checkout/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lines: readCart() satisfies CartLine[] }),
+        });
+        const payload = await response.json() as { url?: string; error?: string };
+        if (!response.ok || !payload.url) throw new Error(payload.error ?? 'Checkout is unavailable.');
+        window.location.assign(payload.url);
+      } catch (error) {
+        if (checkoutMessage) {
+          checkoutMessage.textContent = error instanceof Error ? error.message : 'Checkout is unavailable. Please try again.';
+        }
+        checkout.disabled = false;
+      }
+    });
+
+    render();
+  </script>
+</BaseLayout>
+
+<style>
+  .cart-intro {
+    padding-bottom: 3rem;
+  }
+
+  .cart-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(19rem, 0.65fr);
+    align-items: start;
+    gap: clamp(2rem, 6vw, 6rem);
+  }
+
+  .cart-lines :global(.cart-line) {
+    display: grid;
+    grid-template-columns: 9rem 1fr auto;
+    gap: 1.25rem;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    padding-block: 1.25rem;
+  }
+
+  .cart-lines :global(.cart-line:first-child) {
+    padding-top: 0;
+  }
+
+  .cart-lines :global(.cart-line-image) {
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--surface-soft);
+  }
+
+  .cart-lines :global(.cart-line-image img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .cart-lines :global(h2) {
+    margin-bottom: 0.2rem;
+    font-family: var(--font-serif);
+    font-size: 1.7rem;
+    font-weight: 400;
+    line-height: 1.1;
+  }
+
+  .cart-lines :global(.cart-line-variant) {
+    margin-bottom: 1rem;
+    color: var(--ink-dim);
+    font-size: 0.72rem;
+  }
+
+  .cart-lines :global(.cart-line-controls) {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .cart-lines :global(select) {
+    min-height: 2.35rem;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    padding: 0.3rem 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  .cart-lines :global(button) {
+    border: 0;
+    border-bottom: 1px solid var(--line-strong);
+    background: transparent;
+    padding: 0;
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+  }
+
+  .cart-lines :global(.cart-line-price) {
+    margin: 0;
+    align-self: start;
+    color: var(--champagne-pale);
+    font-size: 0.9rem;
+  }
+
+  .cart-summary {
+    position: sticky;
+    top: 7.25rem;
+    border: 1px solid var(--line);
+    background: var(--surface-raised);
+    padding: clamp(1.5rem, 3vw, 2.3rem);
+  }
+
+  .summary-row,
+  .summary-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line);
+    padding-block: 0.8rem;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+  }
+
+  .summary-row strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .summary-total {
+    margin-bottom: 0.7rem;
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 1.45rem;
+  }
+
+  .summary-total strong {
+    color: var(--champagne-pale);
+    font-weight: 400;
+  }
+
+  .tax-note,
+  .secure-note,
+  .checkout-message {
+    color: var(--ink-dim);
+    font-size: 0.68rem;
+  }
+
+  .tax-note {
+    margin-bottom: 1.25rem;
+  }
+
+  .secure-note {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.85rem 0 0;
+  }
+
+  .checkout-message {
+    min-height: 1.2rem;
+    margin: 0.5rem 0 0;
+    color: var(--champagne-pale);
+    text-align: center;
+  }
+
+  @media (max-width: 56rem) {
+    .cart-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .cart-summary {
+      position: static;
+    }
+  }
+
+  @media (max-width: 37rem) {
+    .cart-lines :global(.cart-line) {
+      grid-template-columns: 6.5rem 1fr;
+      align-items: start;
+    }
+
+    .cart-lines :global(.cart-line-price) {
+      grid-column: 2;
+      margin-top: -0.4rem;
+    }
+  }
+</style>

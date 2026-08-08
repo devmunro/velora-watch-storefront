@@ -1,0 +1,102 @@
+---
+import ProductCard from '../../components/ProductCard.astro';
+import ResponsiveImage from '../../components/ResponsiveImage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublishedCollection } from '../../lib/server/content';
+
+const slug = Astro.params.slug ?? '';
+const result = await getPublishedCollection(slug);
+if (!result) return Astro.redirect('/404');
+const { collection, products } = result;
+---
+
+<BaseLayout title={collection.name} description={collection.summary} image={collection.image}>
+  <header class="collection-hero">
+    <div class="collection-media">
+      <ResponsiveImage
+        src={collection.image}
+        alt={collection.imageAlt}
+        loading="eager"
+        fetchpriority="high"
+        sizes="100vw"
+      />
+    </div>
+    <div class="collection-overlay"></div>
+    <div class="collection-hero-copy shell">
+      <p class="eyebrow">Velora collection</p>
+      <h1>{collection.name}</h1>
+      <p>{collection.summary}</p>
+    </div>
+  </header>
+  <section class="section">
+    <div class="shell">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">The collection</p>
+          <h2 class="section-title">Made to be worn.</h2>
+        </div>
+      </div>
+      {products.length ? (
+        <div class="grid grid-3">
+          {products.map((product) => <ProductCard product={product} headingLevel="h2" />)}
+        </div>
+      ) : (
+        <div class="empty-state">
+          <h2>Coming into focus.</h2>
+          <p>New pieces for this collection will be introduced soon.</p>
+          <a class="button button-secondary" href="/watches">View all watches</a>
+        </div>
+      )}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .collection-hero {
+    position: relative;
+    display: grid;
+    min-height: clamp(34rem, 68vw, 49rem);
+    align-items: end;
+    overflow: hidden;
+  }
+
+  .collection-media,
+  .collection-media :global(picture),
+  .collection-media :global(img),
+  .collection-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .collection-media :global(img) {
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .collection-overlay {
+    background: linear-gradient(0deg, rgba(3, 5, 6, 0.97), rgba(3, 5, 6, 0.15) 68%);
+  }
+
+  .collection-hero-copy {
+    position: relative;
+    z-index: 1;
+    padding-bottom: clamp(3rem, 7vw, 6rem);
+  }
+
+  .collection-hero-copy h1 {
+    margin-bottom: 0.75rem;
+    font-family: var(--font-serif);
+    font-size: clamp(4rem, 11vw, 9rem);
+    font-weight: 400;
+    letter-spacing: -0.045em;
+    line-height: 0.85;
+  }
+
+  .collection-hero-copy > p:last-child {
+    max-width: 38rem;
+    margin: 0;
+    color: var(--ink-soft);
+  }
+</style>

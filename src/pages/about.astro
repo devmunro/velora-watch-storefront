@@ -1,0 +1,226 @@
+---
+import ResponsiveImage from '../components/ResponsiveImage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="About us"
+  description="Discover Velora's approach to modern watchmaking: proportion, precision and enduring materials, considered together."
+>
+  <header class="about-hero">
+    <div class="shell about-hero-grid">
+      <div>
+        <p class="eyebrow">The Velora perspective</p>
+        <h1>Designed around<br /><em>the life you live.</em></h1>
+      </div>
+      <p>
+        Velora creates watches with lasting presence and everyday ease. We look beyond passing detail to the qualities
+        that make an object worth keeping: clarity, balance and honest material character.
+      </p>
+    </div>
+  </header>
+
+  <section class="about-image">
+    <ResponsiveImage
+      src="/images/hero-meridian.webp"
+      alt="Meridian Chronograph resting on black stone"
+      width={1717}
+      height={916}
+      loading="eager"
+      fetchpriority="high"
+      sizes="100vw"
+    />
+  </section>
+
+  <section class="section statement">
+    <div class="narrow">
+      <p class="eyebrow">Our point of view</p>
+      <h2 class="section-title">Restraint creates room for character.</h2>
+      <p>
+        A Velora watch should reveal itself over time. Proportions feel resolved before any individual detail asks for
+        attention. Surfaces change in the light. Controls feel deliberate in the hand. The result is considered, never
+        overworked.
+      </p>
+    </div>
+  </section>
+
+  <section class="principles section section-muted">
+    <div class="shell">
+      <p class="eyebrow">What guides us</p>
+      <div class="principle-grid">
+        <article>
+          <span>01</span>
+          <h2>Clarity</h2>
+          <p>Time should be read instinctively. Every marker, hand and surface supports that first purpose.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h2>Proportion</h2>
+          <p>Diameter is only one measure. Thickness, lugs, dial opening and taper work as one composition.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h2>Longevity</h2>
+          <p>We choose sapphire, stainless steel and proven movements for years of confident wear.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="craft-section">
+    <div class="craft-copy">
+      <p class="eyebrow">Made in layers</p>
+      <h2 class="section-title">Every surface has a purpose.</h2>
+      <p>
+        Brushing softens reflections. Polished edges define the silhouette. Applied markers bring light into the dial.
+        Details are selected for the way they work together, not for decoration alone.
+      </p>
+      <a class="button button-primary" href="/watches">Explore the watches</a>
+    </div>
+    <div class="craft-image">
+      <ResponsiveImage src="/images/nocturne.webp" alt="Nocturne GMT in black and gold" sizes="(max-width: 768px) 100vw, 50vw" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .about-hero {
+    padding-block: clamp(5rem, 10vw, 9rem);
+  }
+
+  .about-hero-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 0.7fr;
+    align-items: end;
+    gap: clamp(2rem, 7vw, 7rem);
+  }
+
+  .about-hero h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(3.7rem, 8.5vw, 8rem);
+    font-weight: 400;
+    letter-spacing: -0.045em;
+    line-height: 0.84;
+  }
+
+  .about-hero h1 em {
+    color: var(--champagne-pale);
+    font-weight: 400;
+  }
+
+  .about-hero-grid > p {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .about-image,
+  .about-image :global(picture) {
+    height: min(62vw, 50rem);
+  }
+
+  .about-image :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .statement {
+    text-align: center;
+  }
+
+  .statement .section-title {
+    margin-bottom: 1.5rem;
+  }
+
+  .statement p:last-child {
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+  }
+
+  .principle-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 2.5rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .principle-grid article {
+    padding: 2rem;
+    border-right: 1px solid var(--line);
+  }
+
+  .principle-grid article:first-child {
+    padding-left: 0;
+  }
+
+  .principle-grid article:last-child {
+    border-right: 0;
+  }
+
+  .principle-grid span {
+    color: var(--champagne);
+    font-size: 0.7rem;
+  }
+
+  .principle-grid h2 {
+    margin: 2.2rem 0 0.75rem;
+    font-family: var(--font-serif);
+    font-size: 2.4rem;
+    font-weight: 400;
+  }
+
+  .principle-grid p {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+  }
+
+  .craft-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 42rem;
+  }
+
+  .craft-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    padding: clamp(3rem, 8vw, 8rem);
+  }
+
+  .craft-copy > p:not(.eyebrow) {
+    margin: 1.5rem 0 2rem;
+    color: var(--ink-soft);
+  }
+
+  .craft-image,
+  .craft-image :global(picture),
+  .craft-image :global(img) {
+    width: 100%;
+    height: 100%;
+    min-height: 36rem;
+  }
+
+  .craft-image :global(img) {
+    object-fit: cover;
+  }
+
+  @media (max-width: 52rem) {
+    .about-hero-grid,
+    .craft-section {
+      grid-template-columns: 1fr;
+    }
+
+    .principle-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .principle-grid article,
+    .principle-grid article:first-child {
+      padding: 2rem 0;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+</style>

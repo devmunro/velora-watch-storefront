@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublishedPolicy } from '../../lib/server/content';
+
+const slug = Astro.params.slug ?? '';
+const policy = await getPublishedPolicy(slug);
+if (!policy) return Astro.redirect('/404');
+---
+
+<BaseLayout title={policy.title} description={policy.intro}>
+  <header class="page-intro">
+    <div class="narrow">
+      <p class="eyebrow">Client care</p>
+      <h1 class="page-title">{policy.title}</h1>
+      <p class="section-copy">{policy.intro}</p>
+    </div>
+  </header>
+  <article class="rich-text narrow policy-body">
+    {policy.sections.map((section) => (
+      <section>
+        <h2>{section.heading}</h2>
+        {section.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+      </section>
+    ))}
+  </article>
+</BaseLayout>
+
+<style>
+  .policy-body {
+    padding-block: clamp(3rem, 7vw, 6rem);
+  }
+
+  .policy-body section:first-child h2 {
+    margin-top: 0;
+  }
+
+</style>
