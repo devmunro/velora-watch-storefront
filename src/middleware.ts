@@ -4,6 +4,7 @@ import { hasSupabaseConfiguration } from './lib/server/runtime-env';
 import { createRequestSupabase, getStaffRole } from './lib/server/supabase';
 
 const protectedAccountPath = /^\/account(?:\/|$)/;
+const protectedCheckoutPath = /^\/checkout\/success(?:\/|$)/;
 const publicAccountPaths = new Set(['/account/sign-in']);
 const adminPageRoles: Record<string, Array<NonNullable<App.Locals['staffRole']>>> = {
   content: ['owner', 'editor'],
@@ -67,6 +68,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.staffRole = staffRole;
 
   if (protectedAccountPath.test(pathname) && !publicAccountPaths.has(pathname) && !user) {
+    const returnTo = encodeURIComponent(`${pathname}${context.url.search}`);
+    return context.redirect(`/account/sign-in?returnTo=${returnTo}`, 307);
+  }
+
+  if (protectedCheckoutPath.test(pathname) && !user) {
     const returnTo = encodeURIComponent(`${pathname}${context.url.search}`);
     return context.redirect(`/account/sign-in?returnTo=${returnTo}`, 307);
   }

@@ -1,0 +1,56 @@
+---
+import { ArrowLeft } from '@lucide/astro';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Checkout cancelled" description="Return to your Velora shopping bag." noindex>
+  <main class="cancelled-page shell">
+    <section>
+      <p class="eyebrow">Checkout cancelled</p>
+      <h1>Your selection is still waiting.</h1>
+      <p>No payment was taken. Reserved pieces are returned automatically when the checkout window expires.</p>
+      <div class="cancelled-actions">
+        <a class="button button-primary" href="/cart"><ArrowLeft size={16} /> Return to your bag</a>
+        <a class="text-link" href="/watches">Explore watches</a>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .cancelled-page {
+    display: grid;
+    min-height: 65svh;
+    place-items: center;
+    padding-block: 5rem;
+  }
+
+  .cancelled-page section {
+    max-width: 46rem;
+    text-align: center;
+  }
+
+  h1 {
+    margin: 0 0 1.2rem;
+    font-family: var(--font-serif);
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 400;
+    line-height: 0.95;
+  }
+
+  .cancelled-page section > p:not(.eyebrow) {
+    max-width: 35rem;
+    margin: 0 auto 2rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  .cancelled-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+  }
+</style>

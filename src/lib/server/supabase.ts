@@ -7,6 +7,7 @@ import {
   hasSupabaseConfiguration,
   requireSupabaseAdminEnvironment,
   requireSupabaseEnvironment,
+  type RuntimeEnvironment,
 } from './runtime-env';
 
 function readRequestCookies(request: Request) {
@@ -54,8 +55,8 @@ export function createRequestSupabase(context: Pick<APIContext, 'cookies' | 'req
   });
 }
 
-export function createSupabaseAdmin() {
-  const environment = requireSupabaseAdminEnvironment();
+export function createSupabaseAdmin(runtimeEnvironment?: RuntimeEnvironment) {
+  const environment = requireSupabaseAdminEnvironment(runtimeEnvironment);
 
   return createClient(environment.url, environment.secretKey, {
     auth: {

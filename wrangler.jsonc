@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "velora-storefront",
-  "main": "@astrojs/cloudflare/entrypoints/server",
+  "main": "./src/worker.ts",
   "compatibility_date": "2026-08-08",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -10,5 +10,8 @@
   },
   "observability": {
     "enabled": true
+  },
+  "triggers": {
+    "crons": ["*/10 * * * *"]
   }
 }

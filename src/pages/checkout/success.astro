@@ -1,0 +1,136 @@
+---
+import { Check, PackageCheck } from '@lucide/astro';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { CommerceError, finalizePaidCheckout, retrieveCheckoutSession } from '../../lib/server/commerce';
+
+export const prerender = false;
+
+const sessionId = Astro.url.searchParams.get('session_id') ?? '';
+let orderId: string | null = null;
+let pending = false;
+let failed = false;
+
+if (!/^cs_[A-Za-z0-9_]{10,200}$/.test(sessionId) || !Astro.locals.user) {
+  failed = true;
+} else {
+  try {
+    const session = await retrieveCheckoutSession(sessionId);
+    if (session.metadata?.user_id !== Astro.locals.user.id) {
+      failed = true;
+    } else if (session.payment_status !== 'paid') {
+      pending = true;
+    } else {
+      orderId = await finalizePaidCheckout(session);
+    }
+  } catch (error) {
+    failed = true;
+    if (error instanceof CommerceError && error.code === 'invalid') pending = false;
+  }
+}
+---
+
+<BaseLayout
+  title={orderId ? 'Order confirmed' : pending ? 'Payment processing' : 'Order confirmation'}
+  description="Your secure Velora checkout result."
+  noindex
+>
+  <main class="result-page shell">
+    {orderId ? (
+      <section class="result-card" data-order-confirmed>
+        <span class="result-icon"><Check size={32} stroke-width={1.4} /></span>
+        <p class="eyebrow">Payment received</p>
+        <h1>Your Velora is reserved.</h1>
+        <p>Thank you. Your order is confirmed and our team will prepare it for dispatch.</p>
+        <p class="order-reference">Order {orderId.slice(0, 8).toUpperCase()}</p>
+        <div class="result-actions">
+          <a class="button button-primary" href={`/account/orders/${orderId}`}>View order</a>
+          <a class="button button-secondary" href="/watches">Continue exploring</a>
+        </div>
+      </section>
+    ) : pending ? (
+      <section class="result-card">
+        <span class="result-icon"><PackageCheck size={32} stroke-width={1.4} /></span>
+        <p class="eyebrow">Payment processing</p>
+        <h1>We are confirming your payment.</h1>
+        <p>Your bag remains reserved. Your order will appear as soon as payment confirmation is received.</p>
+        <a class="button button-primary" href="/account/orders">View your orders</a>
+      </section>
+    ) : (
+      <section class="result-card">
+        <p class="eyebrow">Confirmation unavailable</p>
+        <h1>We could not confirm this order.</h1>
+        <p>{failed ? 'No charge has been confirmed on this page. Check your order history before trying again.' : 'Please check your order history.'}</p>
+        <div class="result-actions">
+          <a class="button button-primary" href="/account/orders">View your orders</a>
+          <a class="button button-secondary" href="/cart">Return to bag</a>
+        </div>
+      </section>
+    )}
+  </main>
+
+  {orderId && (
+    <script>
+      import { writeCart } from '../../lib/cart';
+      writeCart([]);
+    </script>
+  )}
+</BaseLayout>
+
+<style>
+  .result-page {
+    display: grid;
+    min-height: 68svh;
+    place-items: center;
+    padding-block: clamp(4rem, 10vw, 8rem);
+  }
+
+  .result-card {
+    width: min(100%, 43rem);
+    border: 1px solid var(--line);
+    background: linear-gradient(145deg, rgba(199, 157, 103, 0.08), transparent 45%), var(--surface-raised);
+    padding: clamp(2rem, 7vw, 5rem);
+    text-align: center;
+  }
+
+  .result-icon {
+    display: grid;
+    width: 4.5rem;
+    height: 4.5rem;
+    margin: 0 auto 1.6rem;
+    place-items: center;
+    border: 1px solid var(--champagne);
+    border-radius: 50%;
+    color: var(--champagne-pale);
+  }
+
+  h1 {
+    margin: 0 0 1rem;
+    font-family: var(--font-serif);
+    font-size: clamp(2.5rem, 6vw, 4.6rem);
+    font-weight: 400;
+    line-height: 0.98;
+  }
+
+  .result-card > p:not(.eyebrow, .order-reference) {
+    max-width: 33rem;
+    margin: 0 auto 1.6rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  .order-reference {
+    margin-bottom: 1.8rem;
+    color: var(--champagne-pale);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.8rem;
+  }
+</style>
