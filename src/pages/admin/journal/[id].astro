@@ -1,0 +1,13 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import JournalEditor from '../../../components/admin/JournalEditor.astro';
+import { getAdminJournalEditor } from '../../../lib/server/admin';
+export const prerender = false;
+const editor = await getAdminJournalEditor(Astro.params.id);
+if (!editor.post) return Astro.redirect('/admin/journal?error=not-found');
+const role = Astro.locals.staffRole;
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+---
+<AdminLayout title={editor.post.title} description="Edit a Velora journal article." active="journal"><div class="admin-page-head"><div><p class="eyebrow">Article editor</p><h2>{editor.post.title}</h2><p>Draft, preview and prepare this story for publication.</p></div><div class="admin-actions"><a class="button button-secondary" href="/admin/journal">All articles</a>{role === 'owner' && <form method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="journal_posts"/><input type="hidden" name="id" value={editor.post.id}/><input type="hidden" name="version" value={editor.post.version}/><input type="hidden" name="status" value={editor.post.status==='published'?'draft':'published'}/><input type="hidden" name="returnTo" value={`/admin/journal/${editor.post.id}`}/><button class="button button-primary">{editor.post.status==='published'?'Move to draft':'Publish article'}</button></form>}</div></div>{saved&&<p class="notice notice-success">Article saved.</p>}{error==='conflict'&&<p class="notice notice-error">This article changed elsewhere. Reload before saving.</p>}{error&&error!=='conflict'&&<p class="notice notice-error">The article could not be saved.</p>}<JournalEditor editor={editor} mode="edit"/></AdminLayout>
+<style>.notice{margin-bottom:1rem}</style>

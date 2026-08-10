@@ -1,0 +1,25 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getAdminSettings } from '../../lib/server/admin';
+
+export const prerender = false;
+const settings = await getAdminSettings();
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+---
+
+<AdminLayout title="Store settings" description="Manage Velora storefront defaults." active="settings">
+  <div class="admin-page-head"><div><p class="eyebrow">Store configuration</p><h2>Store settings</h2><p>Public contact, delivery and search defaults. Credentials are managed separately and never shown here.</p></div></div>
+  {saved && <p class="notice notice-success" role="status">Store settings saved.</p>}
+  {error === 'conflict' && <p class="notice notice-error" role="alert">Someone changed these settings. Reload before saving again.</p>}
+  {error && error !== 'conflict' && <p class="notice notice-error" role="alert">The settings could not be saved. Check each field.</p>}
+  <form class="admin-card admin-form settings-form" method="post" action="/api/admin/content/settings">
+    <div class="form-section"><p class="eyebrow">Customer message</p><div class="field"><label for="announcement">Announcement bar</label><input id="announcement" name="announcement" maxlength="160" value={settings.announcement} required /><small>Shown above the main navigation.</small></div></div>
+    <div class="form-section"><p class="eyebrow">Delivery and contact</p><div class="form-grid"><div class="field"><label for="threshold">Free shipping from</label><div class="money-input"><span aria-hidden="true">£</span><input id="threshold" name="freeShippingThresholdPounds" inputmode="decimal" pattern="\d+(?:\.\d{1,2})?" value={(settings.free_shipping_threshold / 100).toFixed(2)} required /></div><small>Enter pounds, for example 100.00.</small></div><div class="field"><label for="contact-email">Customer care email</label><input id="contact-email" name="contactEmail" type="email" maxlength="254" value={settings.contact_email ?? ''} /></div></div></div>
+    <div class="form-section"><p class="eyebrow">Search defaults</p><div class="field"><label for="seo-title">Default page title</label><input id="seo-title" name="defaultSeoTitle" maxlength="70" value={settings.default_seo_title} required /></div><div class="field"><label for="seo-description">Default description</label><textarea id="seo-description" name="defaultSeoDescription" maxlength="170" required>{settings.default_seo_description}</textarea></div></div>
+    <input type="hidden" name="version" value={settings.version} />
+    <div class="admin-actions"><button class="button button-primary" type="submit">Save store settings</button></div>
+  </form>
+</AdminLayout>
+
+<style>.settings-form{max-width:58rem}.form-section{display:grid;gap:1rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line)}.form-section:last-of-type{border:0}.field small{color:var(--ink-dim);font-size:.67rem}.money-input{display:flex;align-items:center;border:1px solid var(--line-strong);background:#060809}.money-input:focus-within{border-color:var(--champagne)}.money-input span{padding-left:.85rem;color:var(--champagne-pale)}.money-input input{border:0;background:transparent}</style>

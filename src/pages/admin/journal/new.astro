@@ -1,0 +1,8 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import JournalEditor from '../../../components/admin/JournalEditor.astro';
+import { getAdminJournalEditor } from '../../../lib/server/admin';
+export const prerender = false;
+const editor = await getAdminJournalEditor();
+---
+<AdminLayout title="New journal article" description="Create a Velora journal article." active="journal"><div class="admin-page-head"><div><p class="eyebrow">Editorial</p><h2>New article</h2><p>Create a draft, preview the formatting and publish when it is ready.</p></div><a class="button button-secondary" href="/admin/journal">Back to articles</a></div><JournalEditor editor={editor} mode="create"/></AdminLayout>

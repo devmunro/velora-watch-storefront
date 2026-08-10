@@ -29,7 +29,7 @@ const formatDate = (date: string) =>
             <ResponsiveImage src={post.image} alt={post.imageAlt} sizes={index === 0 ? '100vw' : '(max-width: 768px) 100vw, 50vw'} />
           </a>
           <div class="journal-card-copy">
-            <p class="journal-date">{formatDate(post.publishedAt)}</p>
+            <p class="journal-date">{post.category?.name ?? 'Journal'} · {formatDate(post.publishedAt)} · {post.readingMinutes ?? 1} min read</p>
             <h2><a href={`/journal/${post.slug}`}>{post.title}</a></h2>
             <p>{post.excerpt}</p>
             <a class="text-link" href={`/journal/${post.slug}`}>Read the story <ArrowRight size={16} /></a>

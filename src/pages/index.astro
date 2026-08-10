@@ -10,7 +10,13 @@ import { getPublicContent } from '../lib/server/content';
 
 const content = await getPublicContent();
 const featuredProducts = content.products.filter((product) => product.featured).slice(0, 3);
-const journalPost = content.journalPosts[0];
+const section = (key: string) => content.homepageSections.find((item) => item.key === key);
+const collectionsSection = section('collections');
+const standardSection = section('standard');
+const spotlightSection = section('spotlight');
+const journalSection = section('journal');
+const spotlightProduct = content.products.find((product) => product.id === spotlightSection?.featuredProductId) ?? featuredProducts[0];
+const journalPost = content.journalPosts.find((post) => post.id === journalSection?.featuredJournalPostId) ?? content.journalPosts[0];
 ---
 
 <BaseLayout
@@ -69,10 +75,10 @@ const journalPost = content.journalPosts[0];
     <div class="shell">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Our collections</p>
-          <h2 class="section-title">Find the perfect watch<br />for your style.</h2>
+          <p class="eyebrow">{collectionsSection?.eyebrow}</p>
+          <h2 class="section-title">{collectionsSection?.heading}</h2>
         </div>
-        <a class="text-link" href="/collections">View all collections <ArrowRight size={16} /></a>
+        <a class="text-link" href={collectionsSection?.primaryHref ?? '/collections'}>{collectionsSection?.primaryLabel ?? 'View all collections'} <ArrowRight size={16} /></a>
       </div>
       <div class="grid grid-3">
         {featuredProducts.map((product) => <ProductCard product={product} />)}
@@ -83,35 +89,32 @@ const journalPost = content.journalPosts[0];
   <section class="signature-section">
     <div class="signature-image">
       <ResponsiveImage
-        src="/images/aster.webp"
-        alt="Aster Automatic watch in silver steel"
+        src={standardSection?.image ?? '/images/aster.webp'}
+        alt={standardSection?.imageAlt ?? 'Aster Automatic watch in silver steel'}
         sizes="(max-width: 768px) 100vw, 50vw"
       />
     </div>
     <div class="signature-copy">
-      <p class="eyebrow">The Velora standard</p>
-      <h2 class="section-title">Precision you can feel.</h2>
-      <p>
-        Every Velora timepiece begins with proportion and purpose. From sapphire crystal to the final brushed surface,
-        each detail is chosen to serve the watch for years to come.
-      </p>
-      <a class="button button-secondary" href="/about">Discover our approach</a>
+      <p class="eyebrow">{standardSection?.eyebrow}</p>
+      <h2 class="section-title">{standardSection?.heading}</h2>
+      <p>{standardSection?.body}</p>
+      <a class="button button-secondary" href={standardSection?.primaryHref ?? '/about'}>{standardSection?.primaryLabel ?? 'Discover our approach'}</a>
     </div>
   </section>
 
   <section class="section featured-section section-muted">
     <div class="featured shell">
       <div class="featured-copy">
-        <p class="eyebrow">An icon in black</p>
-        <h2 class="section-title">Meridian<br /><em>Chronograph.</em></h2>
-        <p>Defined by warm metallic details, deep contrast and timing controls made to be used.</p>
-        <p class="featured-price">From {formatMoney(featuredProducts[0]?.variants[0]?.priceAmount ?? 49_500)}</p>
-        <a class="button button-primary" href="/watches/meridian-chronograph">View Meridian</a>
+        <p class="eyebrow">{spotlightSection?.eyebrow}</p>
+        <h2 class="section-title">{spotlightSection?.heading}<br />{spotlightSection?.accent && <em>{spotlightSection.accent}</em>}</h2>
+        <p>{spotlightSection?.body}</p>
+        <p class="featured-price">From {formatMoney(spotlightProduct?.variants[0]?.priceAmount ?? 49_500)}</p>
+        <a class="button button-primary" href={spotlightSection?.primaryHref ?? `/watches/${spotlightProduct?.slug}`}>{spotlightSection?.primaryLabel ?? `View ${spotlightProduct?.name}`}</a>
       </div>
       <div class="featured-image card-image">
         <ResponsiveImage
-          src="/images/meridian.webp"
-          alt="Meridian Chronograph on a black leather strap"
+          src={spotlightSection?.image ?? spotlightProduct?.image ?? '/images/meridian.webp'}
+          alt={spotlightSection?.imageAlt ?? spotlightProduct?.imageAlt ?? 'Featured Velora watch'}
           sizes="(max-width: 768px) 100vw, 55vw"
         />
       </div>
@@ -125,10 +128,10 @@ const journalPost = content.journalPosts[0];
           <ResponsiveImage src={journalPost.image} alt={journalPost.imageAlt} sizes="(max-width: 768px) 100vw, 55vw" />
         </div>
         <div class="journal-copy">
-          <p class="eyebrow">From the journal</p>
+          <p class="eyebrow">{journalSection?.eyebrow ?? 'From the journal'}</p>
           <h2 class="section-title">{journalPost.title}</h2>
           <p>{journalPost.excerpt}</p>
-          <a class="text-link" href={`/journal/${journalPost.slug}`}>Read the story <ArrowRight size={16} /></a>
+          <a class="text-link" href={`/journal/${journalPost.slug}`}>{journalSection?.primaryLabel ?? 'Read the story'} <ArrowRight size={16} /></a>
         </div>
       </div>
     </section>

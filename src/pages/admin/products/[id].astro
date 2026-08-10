@@ -72,7 +72,7 @@ const specs = JSON.stringify(product.specifications ?? {}, null, 2);
         </form>
         {role === 'owner' && (
           <form class="price-form" method="post" action={`/api/admin/variants/${variant.id}/price`}>
-            <div class="field"><label>Price (pence)</label><input name="priceAmount" type="number" min="100" max="10000000" value={variant.price_amount} required /></div>
+            <div class="field"><label>Price (GBP)</label><input name="pricePounds" inputmode="decimal" pattern="\d+(?:\.\d{1,2})?" value={(variant.price_amount / 100).toFixed(2)} required /><small>Enter pounds, for example 495.00.</small></div>
             <label class="check-field"><input type="checkbox" name="active" value="true" checked={variant.active} /> Available for future purchases</label>
             <input type="hidden" name="version" value={variant.version} /><input type="hidden" name="productId" value={product.id} />
             <button class="button button-primary" type="submit">Update price and availability</button>
@@ -80,6 +80,7 @@ const specs = JSON.stringify(product.specifications ?? {}, null, 2);
         )}
       </article>
     ))}
+    {role === 'owner' && <details class="admin-card add-variant"><summary>Add another variant</summary><form class="admin-form" method="post" action={`/api/admin/products/${product.id}/variants`}><div class="form-grid"><div class="field"><label>Variant name</label><input name="name" placeholder="Steel bracelet" required/></div><div class="field"><label>SKU</label><input name="sku" pattern="[A-Z0-9-]+" placeholder="MER-CHR-STL" required/></div><div class="field"><label>Finish</label><input name="finish" required/></div><div class="field"><label>Strap</label><input name="strap" required/></div><div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={product.variants.length}/></div><div class="field"><label>Price (GBP)</label><input name="pricePounds" inputmode="decimal" pattern="\d+(?:\.\d{1,2})?" required/></div><div class="field"><label>Opening stock</label><input name="initialStock" type="number" min="0" value="0" required/></div><div class="field"><label>Low-stock warning</label><input name="lowStockThreshold" type="number" min="0" value="3" required/></div></div><input type="hidden" name="productId" value={product.id}/><button class="button button-primary">Create variant</button></form></details>}
   </section>
 </AdminLayout>
 
@@ -98,5 +99,8 @@ const specs = JSON.stringify(product.specifications ?? {}, null, 2);
   .variant-head h2 { margin:.55rem 0 .25rem;font-size:1.7rem!important; }
   .variant-head p { font-size:.7rem; }
   .price-form { display:grid;gap:1rem;border-left:1px solid var(--line);padding-left:1.5rem; }
+  .add-variant { margin-top:1rem; }
+  .add-variant summary { cursor:pointer;color:var(--champagne-pale);font-size:.72rem;text-transform:uppercase; }
+  .add-variant[open] summary { margin-bottom:1.25rem; }
   @media(max-width:72rem){.variant-card{grid-template-columns:1fr}.price-form{border-left:0;border-top:1px solid var(--line);padding:1.25rem 0 0}}
 </style>

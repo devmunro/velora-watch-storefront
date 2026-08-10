@@ -1,57 +1,19 @@
 ---
+import { Plus } from '@lucide/astro';
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getAdminJournal } from '../../lib/server/admin';
 
 export const prerender = false;
 const posts = await getAdminJournal();
-const role = Astro.locals.staffRole;
 const saved = Astro.url.searchParams.get('saved') === '1';
 const error = Astro.url.searchParams.get('error');
 ---
-
 <AdminLayout title="Journal" description="Manage Velora journal articles." active="journal">
-  <div class="admin-page-head"><div><p class="eyebrow">Editorial</p><h2>Journal articles</h2><p>Write, refine and prepare stories for publication.</p></div></div>
-  {saved && <p class="notice notice-success">Journal changes saved.</p>}
-  {error && <p class="notice notice-error">Journal changes could not be saved.</p>}
-  <details class="admin-card create-panel">
-    <summary>Create article</summary>
-    <form class="admin-form" method="post" action="/api/admin/journal">
-      <div class="form-grid">
-        <div class="field"><label>Title</label><input name="title" maxlength="160" required /></div>
-        <div class="field"><label>Slug</label><input name="slug" maxlength="140" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></div>
-        <div class="field field-wide"><label>Excerpt</label><textarea name="excerpt" maxlength="300" required></textarea></div>
-        <div class="field field-wide"><label>Article body</label><textarea name="body" maxlength="12000" required></textarea></div>
-        <div class="field"><label>Image path</label><input name="imagePath" maxlength="500" required /></div>
-        <div class="field"><label>Alternative text</label><input name="imageAlt" maxlength="240" required /></div>
-        <div class="field"><label>SEO title</label><input name="seoTitle" maxlength="70" /></div>
-        <div class="field"><label>SEO description</label><input name="seoDescription" maxlength="170" /></div>
-      </div>
-      <button class="button button-primary" type="submit">Create draft</button>
-    </form>
-  </details>
-  {posts.map((post: any) => (
-    <article class="admin-card post-card">
-      <div class="card-head"><div><span class:list={['status-pill', `status-${post.status}`]}>{post.status}</span><h2>{post.title}</h2><p>{post.slug}</p></div>
-        {role === 'owner' && <form method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="journal_posts" /><input type="hidden" name="id" value={post.id} /><input type="hidden" name="version" value={post.version} /><input type="hidden" name="status" value={post.status === 'published' ? 'draft' : 'published'} /><input type="hidden" name="returnTo" value="/admin/journal" /><button class="button button-secondary" type="submit">{post.status === 'published' ? 'Move to draft' : 'Publish'}</button></form>}
-      </div>
-      <form class="admin-form" method="post" action={`/api/admin/journal/${post.id}`}>
-        <div class="form-grid">
-          <div class="field"><label>Title</label><input name="title" maxlength="160" value={post.title} required /></div>
-          <div class="field"><label>Slug</label><input name="slug" maxlength="140" value={post.slug} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></div>
-          <div class="field field-wide"><label>Excerpt</label><textarea name="excerpt" maxlength="300" required>{post.excerpt}</textarea></div>
-          <div class="field field-wide"><label>Article body</label><textarea class="body-field" name="body" maxlength="12000" required>{post.body}</textarea></div>
-          <div class="field"><label>Image path</label><input name="imagePath" maxlength="500" value={post.image_path} required /></div>
-          <div class="field"><label>Alternative text</label><input name="imageAlt" maxlength="240" value={post.image_alt} required /></div>
-          <div class="field"><label>SEO title</label><input name="seoTitle" maxlength="70" value={post.seo_title ?? ''} /></div>
-          <div class="field"><label>SEO description</label><input name="seoDescription" maxlength="170" value={post.seo_description ?? ''} /></div>
-        </div>
-        <input type="hidden" name="version" value={post.version} />
-        <button class="button button-primary" type="submit">Save article</button>
-      </form>
-    </article>
-  ))}
+  <div class="admin-page-head"><div><p class="eyebrow">Editorial</p><h2>Journal articles</h2><p>Write helpful stories, group them by subject and connect readers to watches.</p></div><a class="button button-primary" href="/admin/journal/new"><Plus size={15}/> New article</a></div>
+  {saved && <p class="notice notice-success">Journal changes saved.</p>}{error && <p class="notice notice-error">The article could not be saved.</p>}
+  <div class="admin-toolbar"><p>{posts.length} articles</p><label class="field search-field"><span class="sr-only">Filter articles</span><input type="search" placeholder="Filter articles…" data-filter/></label></div>
+  <div class="admin-grid" data-items>{posts.map((post:any)=><a class="admin-card-link" href={`/admin/journal/${post.id}`} data-item={`${post.title} ${post.slug} ${post.category?.name ?? ''}`}><img src={post.image_path} alt="" loading="lazy"/><span class="admin-card-link-content"><span class:list={['status-pill',`status-${post.status}`]}>{post.status}</span><h3>{post.title}</h3><p>{post.category?.name ?? 'Uncategorised'} · {post.reading_minutes} min read</p><p>{post.excerpt}</p></span></a>)}</div>
+  {posts.length === 0 && <p class="admin-empty">No articles yet. Create the first Velora story.</p>}
+  <script>const filter=document.querySelector<HTMLInputElement>('[data-filter]');const items=[...document.querySelectorAll<HTMLElement>('[data-item]')];filter?.addEventListener('input',()=>{const query=filter.value.toLowerCase();items.forEach(item=>item.hidden=!item.dataset.item?.toLowerCase().includes(query));});</script>
 </AdminLayout>
-
-<style>
-  .notice{margin-bottom:1rem}.create-panel{margin-bottom:2rem}.create-panel summary{cursor:pointer;color:var(--champagne-pale);font-size:.8rem;text-transform:uppercase}.create-panel[open] summary{margin-bottom:1.5rem}.post-card{margin-bottom:1rem}.card-head{display:flex;align-items:start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}.card-head h2{margin:.5rem 0 .25rem}.card-head p{font-size:.68rem}.body-field{min-height:15rem}
-</style>
+<style>.notice{margin-bottom:1rem}.admin-toolbar>p{margin:0;color:var(--ink-soft);font-size:.75rem}.search-field{width:min(100%,20rem)}</style>

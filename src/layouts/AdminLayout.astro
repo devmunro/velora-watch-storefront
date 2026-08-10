@@ -38,6 +38,7 @@ const navigation = [
   { key: 'orders', label: 'Orders', href: '/admin/orders', icon: ClipboardList, roles: ['owner', 'fulfilment'] },
   { key: 'staff', label: 'Staff', href: '/admin/staff', icon: Users, roles: ['owner'] },
   { key: 'audit', label: 'Audit history', href: '/admin/audit', icon: Archive, roles: ['owner'] },
+  { key: 'settings', label: 'Store settings', href: '/admin/settings', icon: Settings, roles: ['owner'] },
 ] as Array<{ key: string; label: string; href: string; icon: typeof Gauge; roles: StaffRole[] }>;
 ---
 
@@ -82,7 +83,7 @@ const navigation = [
             <p>{roleLabels[role]} access</p>
             <h1>{title}</h1>
           </div>
-          <a href="/admin" aria-label="Administration settings"><Settings size={20} /></a>
+          {role === 'owner' && <a href="/admin/settings" aria-label="Store settings"><Settings size={20} /></a>}
         </header>
         <main id="admin-content" class="admin-content">
           <slot />
@@ -324,6 +325,18 @@ const navigation = [
     gap: 0.75rem;
   }
 
+  .admin-content :global(.admin-toolbar) { display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem; }
+  .admin-content :global(.admin-grid) { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem; }
+  .admin-content :global(.admin-card-link) { display:grid;overflow:hidden;border:1px solid var(--line);background:var(--surface-raised); }
+  .admin-content :global(.admin-card-link:hover) { border-color:rgba(200,164,118,.55); }
+  .admin-content :global(.admin-card-link img) { width:100%;aspect-ratio:1.7;object-fit:cover; }
+  .admin-content :global(.admin-card-link-content) { display:grid;gap:.65rem;padding:1.15rem; }
+  .admin-content :global(.admin-card-link h3) { margin:0;font-family:var(--font-serif);font-size:1.65rem;font-weight:400; }
+  .admin-content :global(.admin-card-link p) { margin:0;color:var(--ink-soft);font-size:.75rem; }
+  .admin-content :global(.admin-empty) { border:1px dashed var(--line);padding:2rem;color:var(--ink-soft);text-align:center; }
+
+  @media (max-width:72rem) { .admin-content :global(.admin-grid) { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
   @media (max-width: 64rem) {
     .admin-shell {
       grid-template-columns: 5rem minmax(0, 1fr);
@@ -408,5 +421,6 @@ const navigation = [
       align-items: start;
       flex-direction: column;
     }
+    .admin-content :global(.admin-grid) { grid-template-columns:1fr; }
   }
 </style>

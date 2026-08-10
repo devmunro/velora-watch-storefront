@@ -1,0 +1,15 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getAdminPolicy } from '../../../lib/server/admin';
+import { renderMarkdown } from '../../../lib/server/markdown';
+export const prerender = false;
+const policy = await getAdminPolicy(Astro.params.id ?? '');
+if (!policy) return Astro.redirect('/admin/policies?error=not-found');
+const role=Astro.locals.staffRole;const saved=Astro.url.searchParams.get('saved')==='1';const error=Astro.url.searchParams.get('error');
+---
+<AdminLayout title={policy.title} description="Edit Velora policy content." active="policies">
+  <div class="admin-page-head"><div><p class="eyebrow">Policy editor</p><h2>{policy.title}</h2><p>Use clear headings and short paragraphs so customers can find answers quickly.</p></div><div class="admin-actions"><a class="button button-secondary" href="/admin/policies">All policies</a>{role==='owner'&&<form method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="policy_pages"/><input type="hidden" name="id" value={policy.id}/><input type="hidden" name="version" value={policy.version}/><input type="hidden" name="status" value={policy.status==='published'?'draft':'published'}/><input type="hidden" name="returnTo" value={`/admin/policies/${policy.id}`}/><button class="button button-primary">{policy.status==='published'?'Move to draft':'Publish policy'}</button></form>}</div></div>
+  {saved&&<p class="notice notice-success">Policy saved.</p>}{error==='conflict'&&<p class="notice notice-error">This policy changed elsewhere. Reload before saving.</p>}{error&&error!=='conflict'&&<p class="notice notice-error">The policy could not be saved.</p>}
+  <div class="policy-editor"><form class="admin-card admin-form" method="post" action={`/api/admin/policies/${policy.id}`}><div class="form-grid"><div class="field"><label>Title</label><input name="title" maxlength="160" value={policy.title} required/></div><div class="field"><label>URL slug</label><input name="slug" maxlength="140" value={policy.slug} required/></div></div><div class="field"><label>Policy body (Markdown)</label><textarea class="policy-source" name="body" maxlength="12000" required>{policy.body}</textarea><small>Use ## for section headings, lists for steps, and **bold** for important terms.</small></div><input type="hidden" name="version" value={policy.version}/><button class="button button-primary">Save policy</button></form><section class="admin-card"><p class="eyebrow">Customer preview</p><h2>{policy.title}</h2><div class="rich-text preview" set:html={renderMarkdown(policy.body)}></div></section></div>
+</AdminLayout>
+<style>.notice{margin-bottom:1rem}.policy-editor{display:grid;grid-template-columns:1fr 1fr;align-items:start;gap:1rem}.policy-source{min-height:35rem;font-family:ui-monospace,monospace;line-height:1.65}.field small{color:var(--ink-dim);font-size:.67rem}.preview{padding-top:1rem;border-top:1px solid var(--line)}@media(max-width:64rem){.policy-editor{grid-template-columns:1fr}}</style>

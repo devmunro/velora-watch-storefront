@@ -1,40 +1,17 @@
 ---
+import { Plus } from '@lucide/astro';
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getAdminPolicies } from '../../lib/server/admin';
-
 export const prerender = false;
 const policies = await getAdminPolicies();
-const role = Astro.locals.staffRole;
 const saved = Astro.url.searchParams.get('saved') === '1';
 const error = Astro.url.searchParams.get('error');
 ---
-
 <AdminLayout title="Policies" description="Manage Velora policy pages." active="policies">
-  <div class="admin-page-head"><div><p class="eyebrow">Client information</p><h2>Policy pages</h2><p>Maintain shipping, returns, warranty, privacy and purchase information.</p></div></div>
-  {saved && <p class="notice notice-success">Policy saved.</p>}
-  {error && <p class="notice notice-error">The policy could not be saved.</p>}
+  <div class="admin-page-head"><div><p class="eyebrow">Client information</p><h2>Policies</h2><p>Keep important customer information clear, readable and easy to maintain.</p></div></div>
+  {saved&&<p class="notice notice-success">Policy saved.</p>}{error&&<p class="notice notice-error">The policy could not be saved.</p>}
   <p class="notice">Policy wording should receive professional legal review before live trading.</p>
-  <details class="admin-card create-panel">
-    <summary>Create policy page</summary>
-    <form class="admin-form" method="post" action="/api/admin/policies">
-      <div class="form-grid"><div class="field"><label>Title</label><input name="title" maxlength="160" required /></div><div class="field"><label>Slug</label><input name="slug" maxlength="140" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></div><div class="field field-wide"><label>Body</label><textarea name="body" maxlength="12000" required></textarea></div></div>
-      <button class="button button-primary" type="submit">Create draft</button>
-    </form>
-  </details>
-  {policies.map((policy: any) => (
-    <article class="admin-card policy-card">
-      <div class="card-head"><div><span class:list={['status-pill', `status-${policy.status}`]}>{policy.status}</span><h2>{policy.title}</h2></div>
-        {role === 'owner' && <form method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="policy_pages" /><input type="hidden" name="id" value={policy.id} /><input type="hidden" name="version" value={policy.version} /><input type="hidden" name="status" value={policy.status === 'published' ? 'draft' : 'published'} /><input type="hidden" name="returnTo" value="/admin/policies" /><button class="button button-secondary" type="submit">{policy.status === 'published' ? 'Move to draft' : 'Publish'}</button></form>}
-      </div>
-      <form class="admin-form" method="post" action={`/api/admin/policies/${policy.id}`}>
-        <div class="form-grid"><div class="field"><label>Title</label><input name="title" maxlength="160" value={policy.title} required /></div><div class="field"><label>Slug</label><input name="slug" maxlength="140" value={policy.slug} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></div><div class="field field-wide"><label>Body</label><textarea class="body-field" name="body" maxlength="12000" required>{policy.body}</textarea></div></div>
-        <input type="hidden" name="version" value={policy.version} />
-        <button class="button button-primary" type="submit">Save policy</button>
-      </form>
-    </article>
-  ))}
+  <details class="admin-card create-panel"><summary><Plus size={16}/> Create policy</summary><form class="admin-form" method="post" action="/api/admin/policies"><div class="form-grid"><div class="field"><label>Title</label><input name="title" maxlength="160" required/></div><div class="field"><label>URL slug</label><input name="slug" maxlength="140" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required/></div></div><div class="field"><label>Starter content (Markdown)</label><textarea name="body" maxlength="12000" placeholder="## First section&#10;&#10;Write the policy in clear paragraphs." required></textarea></div><button class="button button-primary">Create draft</button></form></details>
+  <div class="admin-grid policy-grid">{policies.map((policy:any)=><a class="admin-card-link" href={`/admin/policies/${policy.id}`}><span class="admin-card-link-content"><span class:list={['status-pill',`status-${policy.status}`]}>{policy.status}</span><h3>{policy.title}</h3><p>/policies/{policy.slug}</p><p>Last updated {new Intl.DateTimeFormat('en-GB',{dateStyle:'medium'}).format(new Date(policy.updated_at))}</p></span></a>)}</div>
 </AdminLayout>
-
-<style>
-  .notice{margin-bottom:1rem}.create-panel{margin:1rem 0 2rem}.create-panel summary{cursor:pointer;color:var(--champagne-pale);font-size:.8rem;text-transform:uppercase}.create-panel[open] summary{margin-bottom:1.5rem}.policy-card{margin-bottom:1rem}.card-head{display:flex;align-items:start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}.card-head h2{margin-top:.5rem}.body-field{min-height:12rem}
-</style>
+<style>.notice,.create-panel{margin-bottom:1rem}.create-panel summary{display:flex;align-items:center;gap:.5rem;cursor:pointer;color:var(--champagne-pale);font-size:.75rem;text-transform:uppercase}.create-panel[open] summary{padding-bottom:1rem;margin-bottom:1rem;border-bottom:1px solid var(--line)}.policy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:42rem){.policy-grid{grid-template-columns:1fr}}</style>

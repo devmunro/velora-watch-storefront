@@ -1,4 +1,5 @@
 ---
+import { ExternalLink, Image as ImageIcon, LayoutPanelTop } from '@lucide/astro';
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getAdminContent } from '../../lib/server/admin';
 
@@ -9,116 +10,52 @@ const saved = Astro.url.searchParams.get('saved') === '1';
 const error = Astro.url.searchParams.get('error');
 ---
 
-<AdminLayout title="Homepage" description="Manage Velora homepage content and settings." active="content">
-  <div class="admin-page-head">
-    <div>
-      <p class="eyebrow">Storefront content</p>
-      <h2>Homepage and settings</h2>
-      <p>Update public messaging while keeping publication controlled.</p>
-    </div>
-  </div>
-  {saved && <p class="notice notice-success">Changes saved.</p>}
-  {error === 'conflict' && <p class="notice notice-error">This content changed in another session. Reload before editing.</p>}
-  {error && error !== 'conflict' && <p class="notice notice-error">Changes could not be saved.</p>}
+<AdminLayout title="Homepage" description="Curate the Velora storefront homepage." active="content">
+  <div class="admin-page-head"><div><p class="eyebrow">Storefront editor</p><h2>Homepage</h2><p>Manage the hero, featured stories and trust content in the order visitors see them.</p></div><a class="button button-secondary" href="/" target="_blank" rel="noopener noreferrer">Preview storefront <ExternalLink size={15}/></a></div>
+  {saved && <p class="notice notice-success" role="status">Homepage changes saved.</p>}
+  {error === 'conflict' && <p class="notice notice-error" role="alert">This content changed elsewhere. Reload before editing.</p>}
+  {error && error !== 'conflict' && <p class="notice notice-error" role="alert">Changes could not be saved. Check the highlighted content.</p>}
 
-  {role === 'owner' && (
-    <section class="admin-card content-card">
-      <div class="card-head"><div><p class="eyebrow">Global settings</p><h2>Store details</h2></div></div>
-      <form class="admin-form" method="post" action="/api/admin/content/settings">
-        <div class="form-grid">
-          <div class="field field-wide"><label for="announcement">Announcement</label><input id="announcement" name="announcement" maxlength="160" value={content.settings.announcement} required /></div>
-          <div class="field"><label for="threshold">Free shipping threshold (pence)</label><input id="threshold" name="freeShippingThreshold" type="number" min="0" max="1000000" value={content.settings.free_shipping_threshold} required /></div>
-          <div class="field"><label for="contact-email">Contact email</label><input id="contact-email" name="contactEmail" type="email" maxlength="254" value={content.settings.contact_email ?? ''} /></div>
-          <div class="field"><label for="seo-title">Default SEO title</label><input id="seo-title" name="defaultSeoTitle" maxlength="70" value={content.settings.default_seo_title} required /></div>
-          <div class="field"><label for="seo-description">Default SEO description</label><input id="seo-description" name="defaultSeoDescription" maxlength="170" value={content.settings.default_seo_description} required /></div>
-        </div>
-        <input type="hidden" name="version" value={content.settings.version} />
-        <button class="button button-primary" type="submit">Save settings</button>
-      </form>
-    </section>
-  )}
-
-  <section class="content-group">
-    <div class="group-title"><p class="eyebrow">Hero carousel</p><h2>Slides</h2></div>
-    {content.heroSlides.map((slide: any) => (
-      <article class="admin-card content-card">
-        <div class="card-head">
-          <div><span class:list={['status-pill', `status-${slide.status}`]}>{slide.status}</span><h2>{slide.title} {slide.accent}</h2></div>
-          {role === 'owner' && (
-            <form method="post" action="/api/admin/publish">
-              <input type="hidden" name="entity" value="hero_slides" /><input type="hidden" name="id" value={slide.id} />
-              <input type="hidden" name="version" value={slide.version} /><input type="hidden" name="status" value={slide.status === 'published' ? 'draft' : 'published'} />
-              <input type="hidden" name="returnTo" value="/admin/content" />
-              <button class="button button-secondary" type="submit">{slide.status === 'published' ? 'Move to draft' : 'Publish'}</button>
-            </form>
-          )}
-        </div>
-        <form class="admin-form" method="post" action={`/api/admin/content/hero/${slide.id}`}>
-          <div class="form-grid">
-            <div class="field"><label>Eyebrow</label><input name="eyebrow" maxlength="100" value={slide.eyebrow} required /></div>
-            <div class="field"><label>Heading</label><input name="title" maxlength="100" value={slide.title} required /></div>
-            <div class="field"><label>Accent heading</label><input name="accent" maxlength="100" value={slide.accent} required /></div>
-            <div class="field"><label>Position</label><input name="position" type="number" min="0" max="99" value={slide.position} required /></div>
-            <div class="field field-wide"><label>Body</label><textarea name="body" maxlength="400" required>{slide.body}</textarea></div>
-            <div class="field"><label>Primary label</label><input name="primaryLabel" maxlength="60" value={slide.primary_label} required /></div>
-            <div class="field"><label>Primary path</label><input name="primaryHref" maxlength="200" value={slide.primary_href} required /></div>
-            <div class="field"><label>Secondary label</label><input name="secondaryLabel" maxlength="60" value={slide.secondary_label ?? ''} /></div>
-            <div class="field"><label>Secondary path</label><input name="secondaryHref" maxlength="200" value={slide.secondary_href ?? ''} /></div>
-            <div class="field"><label>Media path</label><input name="mediaPath" maxlength="500" value={slide.media_path} required /></div>
-            <div class="field"><label>Alternative text</label><input name="mediaAlt" maxlength="240" value={slide.media_alt} required /></div>
-          </div>
-          <input type="hidden" name="version" value={slide.version} />
-          <button class="button button-primary" type="submit">Save slide</button>
-        </form>
-      </article>
-    ))}
-  </section>
-
-  <section class="content-group">
-    <div class="group-title"><p class="eyebrow">Primary navigation</p><h2>Navigation</h2></div>
-    <div class="benefit-grid">
-      {content.navigation.map((item: any) => (
-        <article class="admin-card">
-          <div class="card-head"><div><span class:list={['status-pill', `status-${item.status}`]}>{item.status}</span><h2>{item.label}</h2></div>
-            {role === 'owner' && <form method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="navigation_items"/><input type="hidden" name="id" value={item.id}/><input type="hidden" name="version" value={item.version}/><input type="hidden" name="status" value={item.status === 'published' ? 'draft' : 'published'}/><input type="hidden" name="returnTo" value="/admin/content"/><button class="button button-secondary" type="submit">{item.status === 'published' ? 'Unpublish' : 'Publish'}</button></form>}
-          </div>
-          <form class="admin-form" method="post" action={`/api/admin/content/navigation/${item.id}`}>
-            <div class="form-grid"><div class="field"><label>Label</label><input name="label" maxlength="40" value={item.label} required/></div><div class="field"><label>Path</label><input name="href" maxlength="200" value={item.href} required/></div><div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={item.position} required/></div></div>
-            <input type="hidden" name="version" value={item.version}/><button class="button button-secondary" type="submit">Save navigation item</button>
+  <section class="editor-group">
+    <div class="group-head"><div><p class="eyebrow">First impression</p><h2>Hero slides</h2><p>Large campaign messages at the top of the storefront.</p></div><span>{content.heroSlides.length} slides</span></div>
+    <div class="admin-grid">
+      {content.heroSlides.map((slide: any) => (
+        <details class="admin-card visual-editor">
+          <summary><img src={slide.media_path} alt="" loading="lazy"/><span class="summary-copy"><span class:list={['status-pill', `status-${slide.status}`]}>{slide.status}</span><strong>{slide.title} {slide.accent}</strong><small>Position {slide.position + 1}</small></span></summary>
+          <form class="admin-form" method="post" action={`/api/admin/content/hero/${slide.id}`}>
+            <div class="field"><label>Small heading</label><input name="eyebrow" maxlength="100" value={slide.eyebrow} required /></div>
+            <div class="form-grid"><div class="field"><label>Main heading</label><input name="title" maxlength="100" value={slide.title} required /></div><div class="field"><label>Accent heading</label><input name="accent" maxlength="100" value={slide.accent} required /></div></div>
+            <div class="field"><label>Description</label><textarea name="body" maxlength="400" required>{slide.body}</textarea></div>
+            <div class="form-grid"><div class="field"><label>Primary button</label><input name="primaryLabel" maxlength="60" value={slide.primary_label} required /></div><div class="field"><label>Button path</label><input name="primaryHref" value={slide.primary_href} required /></div><div class="field"><label>Second button</label><input name="secondaryLabel" maxlength="60" value={slide.secondary_label ?? ''} /></div><div class="field"><label>Second path</label><input name="secondaryHref" value={slide.secondary_href ?? ''} /></div></div>
+            <div class="form-grid"><div class="field"><label>Image path</label><input name="mediaPath" value={slide.media_path} required /></div><div class="field"><label>Image description</label><input name="mediaAlt" maxlength="240" value={slide.media_alt} required /></div><div class="field"><label>Position</label><input name="position" type="number" min="0" max="99" value={slide.position} required /></div></div>
+            <input type="hidden" name="version" value={slide.version}/><div class="admin-actions"><button class="button button-primary">Save slide</button></div>
           </form>
-        </article>
+          {role === 'owner' && <form class="publish-row" method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="hero_slides"/><input type="hidden" name="id" value={slide.id}/><input type="hidden" name="version" value={slide.version}/><input type="hidden" name="status" value={slide.status === 'published' ? 'draft' : 'published'}/><input type="hidden" name="returnTo" value="/admin/content"/><button class="button button-secondary">{slide.status === 'published' ? 'Unpublish slide' : 'Publish slide'}</button></form>}
+        </details>
       ))}
     </div>
   </section>
 
-  <section class="content-group">
-    <div class="group-title"><p class="eyebrow">Trust strip</p><h2>Benefits</h2></div>
-    <div class="benefit-grid">
-      {content.benefits.map((benefit: any) => (
-        <form class="admin-card admin-form" method="post" action={`/api/admin/content/benefit/${benefit.id}`}>
-          <div class="field"><label>Title</label><input name="title" maxlength="80" value={benefit.title} required /></div>
-          <div class="field"><label>Body</label><input name="body" maxlength="140" value={benefit.body} required /></div>
-          <div class="form-grid">
-            <div class="field"><label>Icon</label><select name="icon"><option value="shield" selected={benefit.icon === 'shield'}>Shield</option><option value="delivery" selected={benefit.icon === 'delivery'}>Delivery</option><option value="returns" selected={benefit.icon === 'returns'}>Returns</option><option value="quality" selected={benefit.icon === 'quality'}>Quality</option></select></div>
-            <div class="field"><label>Position</label><input name="position" type="number" min="0" max="99" value={benefit.position} required /></div>
-          </div>
-          <input type="hidden" name="version" value={benefit.version} />
-          <button class="button button-secondary" type="submit">Save benefit</button>
-        </form>
+  <section class="editor-group">
+    <div class="group-head"><div><p class="eyebrow">Curated layout</p><h2>Homepage sections</h2><p>Edit the approved sections without risking the page structure.</p></div><LayoutPanelTop size={22}/></div>
+    <div class="section-list">
+      {content.sections.map((section: any) => (
+        <details class="admin-card section-editor">
+          <summary><span><span class:list={['status-pill', `status-${section.status}`]}>{section.visible ? section.status : 'hidden'}</span><strong>{section.heading}</strong><small>{section.section_key}</small></span><span>Edit section</span></summary>
+          <form class="admin-form" method="post" action={`/api/admin/content/section/${section.id}`}>
+            <div class="form-grid"><div class="field"><label>Small heading</label><input name="eyebrow" maxlength="100" value={section.eyebrow} required/></div><div class="field"><label>Section heading</label><input name="heading" maxlength="140" value={section.heading} required/></div><div class="field"><label>Accent text</label><input name="accent" maxlength="100" value={section.accent ?? ''}/></div><div class="field"><label>Position</label><input name="position" type="number" min="0" max="99" value={section.position} required/></div></div>
+            <div class="field"><label>Supporting copy</label><textarea name="body" maxlength="700" required>{section.body}</textarea></div>
+            <div class="form-grid"><div class="field"><label>Image path</label><input name="mediaPath" value={section.media_path ?? ''}/></div><div class="field"><label>Image description</label><input name="mediaAlt" maxlength="240" value={section.media_alt ?? ''}/></div><div class="field"><label>Button label</label><input name="primaryLabel" maxlength="60" value={section.primary_label ?? ''}/></div><div class="field"><label>Button path</label><input name="primaryHref" value={section.primary_href ?? ''}/></div></div>
+            <div class="form-grid"><div class="field"><label>Featured product</label><select name="featuredProductId"><option value="">Automatic</option>{content.products.map((item:any)=><option value={item.id} selected={item.id===section.featured_product_id}>{item.name}</option>)}</select></div><div class="field"><label>Featured collection</label><select name="featuredCollectionId"><option value="">None</option>{content.collections.map((item:any)=><option value={item.id} selected={item.id===section.featured_collection_id}>{item.name}</option>)}</select></div><div class="field"><label>Featured article</label><select name="featuredJournalPostId"><option value="">Latest article</option>{content.journal.map((item:any)=><option value={item.id} selected={item.id===section.featured_journal_post_id}>{item.title}</option>)}</select></div><div class="field"><label>Visibility</label><select name="visible"><option value="true" selected={section.visible}>Visible</option><option value="false" selected={!section.visible}>Hidden</option></select></div></div>
+            <input type="hidden" name="version" value={section.version}/><div class="admin-actions"><button class="button button-primary">Save section</button></div>
+          </form>
+          {role === 'owner' && <form class="publish-row" method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="homepage_sections"/><input type="hidden" name="id" value={section.id}/><input type="hidden" name="version" value={section.version}/><input type="hidden" name="status" value={section.status === 'published' ? 'draft' : 'published'}/><input type="hidden" name="returnTo" value="/admin/content"/><button class="button button-secondary">{section.status === 'published' ? 'Move to draft' : 'Publish section'}</button></form>}
+        </details>
       ))}
     </div>
   </section>
+
+  <section class="editor-group two-up"><details class="admin-card"><summary><ImageIcon size={18}/> Trust benefits</summary><div class="compact-editors">{content.benefits.map((benefit:any)=><form class="admin-form compact-form" method="post" action={`/api/admin/content/benefit/${benefit.id}`}><div class="field"><label>Title</label><input name="title" value={benefit.title} required/></div><div class="field"><label>Copy</label><input name="body" value={benefit.body} required/></div><div class="form-grid"><div class="field"><label>Icon</label><select name="icon">{['shield','delivery','returns','quality'].map(icon=><option value={icon} selected={benefit.icon===icon}>{icon}</option>)}</select></div><div class="field"><label>Position</label><input name="position" type="number" value={benefit.position}/></div></div><input type="hidden" name="version" value={benefit.version}/><button class="button button-secondary">Save benefit</button></form>)}</div></details><details class="admin-card"><summary>Primary navigation</summary><div class="compact-editors">{content.navigation.map((item:any)=><form class="admin-form compact-form" method="post" action={`/api/admin/content/navigation/${item.id}`}><div class="form-grid"><div class="field"><label>Label</label><input name="label" value={item.label} required/></div><div class="field"><label>Path</label><input name="href" value={item.href} required/></div></div><input name="position" type="hidden" value={item.position}/><input type="hidden" name="version" value={item.version}/><button class="button button-secondary">Save link</button></form>)}</div></details></section>
 </AdminLayout>
 
-<style>
-  .notice { margin-bottom: 1rem; }
-  .content-card { margin-bottom: 1rem; }
-  .card-head { display:flex;align-items:start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem; }
-  .card-head h2 { margin-top:.5rem; }
-  .content-group { margin-top:3rem; }
-  .group-title { margin-bottom:1rem; }
-  .group-title .eyebrow { margin-bottom:.25rem; }
-  .group-title h2 { margin:0;font-family:var(--font-serif);font-size:2.5rem;font-weight:400; }
-  .benefit-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem; }
-  @media(max-width:50rem){.benefit-grid{grid-template-columns:1fr}.card-head{flex-direction:column}}
-</style>
+<style>.notice{margin-bottom:1rem}.editor-group{margin-top:3rem}.group-head{display:flex;justify-content:space-between;align-items:end;gap:1rem;margin-bottom:1rem}.group-head h2{margin:.2rem 0;font:400 2.5rem/1 var(--font-serif)}.group-head p{margin:0;color:var(--ink-soft)}.group-head>span,.group-head>svg{color:var(--champagne)}.visual-editor{padding:0!important}.visual-editor summary{display:grid;cursor:pointer;list-style:none}.visual-editor summary img{width:100%;aspect-ratio:1.7;object-fit:cover}.summary-copy{display:grid;gap:.45rem;padding:1rem}.summary-copy strong,.section-editor summary strong{font:400 1.4rem/1.1 var(--font-serif)}.summary-copy small,.section-editor summary small{color:var(--ink-dim);text-transform:capitalize}.visual-editor>form,.visual-editor>.publish-row{margin:1rem}.section-list{display:grid;gap:.75rem}.section-editor summary{display:flex;justify-content:space-between;align-items:center;gap:1rem;cursor:pointer;list-style:none}.section-editor summary>span:first-child{display:grid;gap:.4rem}.section-editor[open] summary{padding-bottom:1.25rem;border-bottom:1px solid var(--line);margin-bottom:1.25rem}.publish-row{padding-top:1rem;border-top:1px solid var(--line)}.two-up{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.two-up details>summary{display:flex;gap:.5rem;cursor:pointer;color:var(--champagne-pale);text-transform:uppercase;font-size:.72rem}.compact-editors{display:grid;gap:1rem;margin-top:1.5rem}.compact-form{padding-top:1rem;border-top:1px solid var(--line)}@media(max-width:55rem){.two-up{grid-template-columns:1fr}.group-head{align-items:start;flex-direction:column}}</style>

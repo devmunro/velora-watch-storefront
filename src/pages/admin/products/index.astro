@@ -2,15 +2,17 @@
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { formatMoney } from '../../../data/catalog';
 import { getAdminProducts } from '../../../lib/server/admin';
+import { Plus } from '@lucide/astro';
 
 export const prerender = false;
 const products = await getAdminProducts();
+const role = Astro.locals.staffRole;
 const collectionName = (value: unknown) => Array.isArray(value) ? value[0]?.name : (value as { name?: string } | null)?.name;
 ---
 
 <AdminLayout title="Products" description="Manage Velora products, variants and prices." active="products">
   <div class="admin-page-head">
-    <div><p class="eyebrow">Catalogue</p><h2>Products and variants</h2><p>Edit product copy, specifications, pricing and publication status.</p></div>
+    <div><p class="eyebrow">Catalogue</p><h2>Products and variants</h2><p>Edit product copy, specifications, pricing and publication status.</p></div>{role==='owner'&&<a class="button button-primary" href="/admin/products/new"><Plus size={15}/> New product</a>}
   </div>
   <div class="admin-table-wrap">
     <table class="admin-table">

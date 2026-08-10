@@ -1,109 +1,33 @@
 ---
-import { Boxes, FilePenLine, Package, ShoppingBag } from '@lucide/astro';
-
+import { ArrowRight, Boxes, FilePenLine, Image, Package, Settings, ShoppingBag } from '@lucide/astro';
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getAdminDashboard } from '../../lib/server/admin';
-
-export const prerender = false;
-let dashboard: Awaited<ReturnType<typeof getAdminDashboard>> | null = null;
-try { dashboard = await getAdminDashboard(); } catch { dashboard = null; }
-const role = Astro.locals.staffRole;
-const denied = Astro.url.searchParams.get('access') === 'denied';
-const cards = [
-  { label: 'Products', value: dashboard?.productCount ?? '—', copy: `${dashboard?.draftCount ?? 0} draft`, href: '/admin/products', icon: Package, roles: ['owner', 'editor'] },
-  { label: 'Low stock', value: dashboard?.lowStockCount ?? '—', copy: 'At or below warning level', href: '/admin/inventory', icon: Boxes, roles: ['owner', 'fulfilment'] },
-  { label: 'Orders', value: dashboard?.orderCount ?? '—', copy: 'Across all statuses', href: '/admin/orders', icon: ShoppingBag, roles: ['owner', 'fulfilment'] },
-  { label: 'Reservations', value: dashboard?.pendingReservationCount ?? '—', copy: 'Awaiting completion', href: '/admin/inventory', icon: FilePenLine, roles: ['owner', 'fulfilment'] },
+export const prerender=false;
+let dashboard:Awaited<ReturnType<typeof getAdminDashboard>>|null=null;try{dashboard=await getAdminDashboard(Astro.locals.user?.id);}catch{dashboard=null;}
+const role=Astro.locals.staffRole;const denied=Astro.url.searchParams.get('access')==='denied';
+const cards=[
+ {label:'Products',value:dashboard?.productCount??'—',detail:`${dashboard?.draftCount??0} draft`,href:'/admin/products',icon:Package,roles:['owner','editor']},
+ {label:'Low stock',value:dashboard?.lowStockCount??'—',detail:`${dashboard?.outOfStockCount??0} unavailable`,href:'/admin/inventory',icon:Boxes,roles:['owner','fulfilment']},
+ {label:'Orders to action',value:dashboard?.pendingOrderCount??'—',detail:`${dashboard?.orderCount??0} orders total`,href:'/admin/orders',icon:ShoppingBag,roles:['owner','fulfilment']},
+ {label:'Reservations',value:dashboard?.pendingReservationCount??'—',detail:'Active checkout holds',href:'/admin/inventory',icon:FilePenLine,roles:['owner','fulfilment']},
 ];
+const quick=[
+ {label:'Edit homepage',copy:'Update featured storefront content.',href:'/admin/content',icon:FilePenLine,roles:['owner','editor']},
+ {label:'Upload media',copy:'Stage and publish catalogue imagery.',href:'/admin/media',icon:Image,roles:['owner','editor']},
+ {label:'Adjust stock',copy:'Record a traceable stock movement.',href:'/admin/inventory',icon:Boxes,roles:['owner','fulfilment']},
+ {label:'Store settings',copy:'Manage customer-facing defaults.',href:'/admin/settings',icon:Settings,roles:['owner']},
+];
+const showTour=dashboard&&!dashboard.onboarding?.tour_completed_at&&!dashboard.onboarding?.tour_dismissed_at;
+const recentActivity=dashboard?.recentActivity??[];
+const activityLabel=(action:string)=>action.replaceAll('.',' ').replace(/^\w/,letter=>letter.toUpperCase());
 ---
-
 <AdminLayout title="Dashboard" description="Velora administration dashboard." active="dashboard">
-  <div class="admin-page-head">
-    <div>
-      <p class="eyebrow">Today at Velora</p>
-      <h2>Store overview</h2>
-      <p>Content, commerce and fulfilment signals for your current access level.</p>
-    </div>
-  </div>
-
-  {!dashboard && <p class="notice notice-error" role="alert">Administrative data is temporarily unavailable.</p>}
-  {denied && <p class="notice notice-error" role="alert">Your staff role does not permit access to that area.</p>}
-  <div class="metric-grid">
-    {cards.filter((card) => card.roles.includes(role ?? '')).map((card) => {
-      const Icon = card.icon;
-      return (
-        <a class="admin-card metric-card" href={card.href}>
-          <Icon size={22} stroke-width={1.4} />
-          <div><strong>{card.value}</strong><span>{card.label}</span></div>
-          <p>{card.copy}</p>
-        </a>
-      );
-    })}
-  </div>
-
-  <section class="admin-card getting-started">
-    <p class="eyebrow">Operational discipline</p>
-    <h2>Publish with confidence.</h2>
-    <p>
-      Drafts remain private until an owner publishes them. Stock and order actions create immutable ledger or audit
-      records, and stale forms are rejected before newer work can be overwritten.
-    </p>
-  </section>
+  <div class="admin-page-head"><div><p class="eyebrow">Today at Velora</p><h2>Store overview</h2><p>The actions and signals that need your attention.</p></div><button class="button button-secondary" type="button" data-open-tour>Show guide</button></div>
+  {!dashboard&&<p class="notice notice-error">Administrative data is temporarily unavailable.</p>}{denied&&<p class="notice notice-error">Your role does not permit access to that area.</p>}
+  <div class="metric-grid">{cards.filter(card=>card.roles.includes(role??'')).map(card=>{const Icon=card.icon;return <a class="admin-card metric-card" href={card.href}><span class="metric-icon"><Icon size={20}/></span><span class="metric-value">{card.value}</span><span class="metric-label">{card.label}</span><span class="metric-detail">{card.detail}</span></a>})}</div>
+  <div class="dashboard-grid"><section><div class="section-head"><div><p class="eyebrow">Common tasks</p><h2>Quick actions</h2></div></div><div class="quick-grid">{quick.filter(item=>item.roles.includes(role??'')).map(item=>{const Icon=item.icon;return <a class="quick-card" href={item.href}><Icon size={19}/><span><strong>{item.label}</strong><small>{item.copy}</small></span><ArrowRight size={15}/></a>})}</div></section><section><div class="section-head"><div><p class="eyebrow">Account setup</p><h2>Getting started</h2></div></div><div class="admin-card checklist"><label><input type="checkbox" checked disabled/> Staff access confirmed</label>{['owner','editor'].includes(role??'')&&<label><input type="checkbox" checked={(dashboard?.productCount??0)>0} disabled/> Catalogue reviewed</label>}{['owner','editor'].includes(role??'')&&<label><input type="checkbox" checked={(dashboard?.draftCount??0)===0} disabled/> Draft products resolved</label>}{['owner','fulfilment'].includes(role??'')&&<label><input type="checkbox" checked={(dashboard?.lowStockCount??0)===0} disabled/> Stock warnings resolved</label>}<button class="text-button" type="button" data-open-tour>Take the admin tour</button></div></section></div>
+  {recentActivity.length>0&&<section class="activity-section"><div class="section-head"><div><p class="eyebrow">Accountability</p><h2>Recent activity</h2></div>{role==='owner'&&<a href="/admin/audit">View audit history</a>}</div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Action</th><th>Area</th><th>When</th></tr></thead><tbody>{recentActivity.map((item:any)=><tr><td>{activityLabel(item.action)}</td><td>{item.entity_type.replaceAll('_',' ')}</td><td>{new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short'}).format(new Date(item.created_at))}</td></tr>)}</tbody></table></div></section>}
+  <dialog class="tour-dialog" data-tour open={showTour||undefined}><form method="dialog" class="dialog-close"><button aria-label="Close guide">×</button></form><p class="eyebrow">Velora administration</p><h2>Know where everything lives.</h2><ol><li><strong>Shape the storefront</strong><span>Homepage, products, collections, journal, policies and media are editorial tools.</span></li><li><strong>Run the store</strong><span>Inventory and orders show operational work. Every stock change is recorded.</span></li><li><strong>Publish carefully</strong><span>Editors prepare drafts; owners control publication, pricing and staff access.</span></li></ol><div class="tour-actions"><form method="post" action="/api/admin/onboarding"><input type="hidden" name="action" value="complete"/><button class="button button-primary">Got it, finish tour</button></form><form method="post" action="/api/admin/onboarding"><input type="hidden" name="action" value="dismiss"/><button class="button button-secondary">Remind me later</button></form></div></dialog>
+  <script>const dialog=document.querySelector<HTMLDialogElement>('[data-tour]');document.querySelectorAll('[data-open-tour]').forEach(button=>button.addEventListener('click',()=>dialog?.showModal()));if(dialog?.hasAttribute('open')){dialog.removeAttribute('open');dialog.showModal();}</script>
 </AdminLayout>
-
-<style>
-  .metric-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
-  }
-
-  .metric-card {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .metric-card > :global(svg) {
-    color: var(--champagne);
-  }
-
-  .metric-card div {
-    display: grid;
-  }
-
-  .metric-card strong {
-    color: var(--ink);
-    font-family: var(--font-serif);
-    font-size: 3rem;
-    font-weight: 400;
-    line-height: 1;
-  }
-
-  .metric-card span {
-    color: var(--ink-soft);
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .metric-card p {
-    font-size: 0.7rem;
-  }
-
-  .getting-started {
-    max-width: 48rem;
-    margin-top: 2.5rem;
-  }
-
-  .getting-started .eyebrow {
-    margin-bottom: 0.5rem;
-  }
-
-  @media (max-width: 72rem) {
-    .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-
-  @media (max-width: 38rem) {
-    .metric-grid { grid-template-columns: 1fr; }
-  }
-</style>
+<style>.notice{margin-bottom:1rem}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}.metric-card{display:grid;grid-template-rows:2rem 4rem 1.2rem 1.4rem;gap:.25rem;min-width:0}.metric-icon{color:var(--champagne)}.metric-value{font:400 3.5rem/1 var(--font-serif);font-variant-numeric:tabular-nums}.metric-label{color:var(--ink);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}.metric-detail{overflow:hidden;color:var(--ink-dim);font-size:.67rem;white-space:nowrap;text-overflow:ellipsis}.dashboard-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:2rem;margin-top:3rem}.section-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:1rem}.section-head h2{margin:0;font:400 2.3rem/1 var(--font-serif)}.section-head p{margin-bottom:.3rem}.section-head a{color:var(--champagne-pale);font-size:.7rem}.quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}.quick-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.8rem;border:1px solid var(--line);background:var(--surface-raised);padding:1rem}.quick-card>svg:first-child{color:var(--champagne)}.quick-card span{display:grid;gap:.2rem}.quick-card strong{font-size:.78rem}.quick-card small{color:var(--ink-dim);font-size:.65rem}.checklist{display:grid;gap:.9rem}.checklist label{display:flex;gap:.65rem;color:var(--ink-soft);font-size:.75rem}.checklist input{width:auto;accent-color:var(--champagne)}.text-button{width:max-content;border:0;border-bottom:1px solid var(--champagne);background:none;padding:.15rem 0;color:var(--champagne-pale);font-size:.7rem}.activity-section{margin-top:3rem}.tour-dialog{width:min(calc(100% - 2rem),38rem);border:1px solid var(--line-strong);background:#0b0d0e;padding:clamp(1.5rem,4vw,3rem);color:var(--ink)}.tour-dialog::backdrop{background:rgba(0,0,0,.78);backdrop-filter:blur(4px)}.tour-dialog h2{margin:.4rem 0 1.5rem;font:400 3rem/.95 var(--font-serif)}.tour-dialog ol{display:grid;gap:1rem;padding-left:1.2rem}.tour-dialog li{padding-left:.5rem;color:var(--champagne)}.tour-dialog li span,.tour-dialog li strong{display:block}.tour-dialog li strong{color:var(--ink);font-size:.85rem}.tour-dialog li span{margin-top:.2rem;color:var(--ink-soft);font-size:.75rem}.dialog-close{position:absolute;top:1rem;right:1rem}.dialog-close button{border:0;background:none;color:var(--ink);font-size:1.5rem}.tour-actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:2rem}@media(max-width:72rem){.metric-grid{grid-template-columns:repeat(2,1fr)}.dashboard-grid{grid-template-columns:1fr}}@media(max-width:42rem){.metric-grid,.quick-grid{grid-template-columns:1fr}}</style>

@@ -16,7 +16,7 @@ if (!policy) return Astro.redirect('/404');
     </div>
   </header>
   <article class="rich-text narrow policy-body">
-    {policy.sections.map((section) => (
+    {policy.bodyHtml ? <div set:html={policy.bodyHtml}></div> : policy.sections.map((section) => (
       <section>
         <h2>{section.heading}</h2>
         {section.paragraphs.map((paragraph) => <p>{paragraph}</p>)}

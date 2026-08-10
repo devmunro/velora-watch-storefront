@@ -1,42 +1,8 @@
 ---
+import { Plus } from '@lucide/astro';
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getAdminCollections } from '../../lib/server/admin';
-
-export const prerender = false;
-const collections = await getAdminCollections();
-const role = Astro.locals.staffRole;
-const saved = Astro.url.searchParams.get('saved') === '1';
-const error = Astro.url.searchParams.get('error');
+export const prerender=false;const collections=await getAdminCollections();const saved=Astro.url.searchParams.get('saved')==='1';const error=Astro.url.searchParams.get('error');
 ---
-
-<AdminLayout title="Collections" description="Manage Velora watch collections." active="collections">
-  <div class="admin-page-head"><div><p class="eyebrow">Catalogue structure</p><h2>Collections</h2><p>Organise product families and their public landing pages.</p></div></div>
-  {saved && <p class="notice notice-success">Collection saved.</p>}
-  {error && <p class="notice notice-error">The collection could not be saved. Reload if another session changed it.</p>}
-  {collections.map((collection: any) => (
-    <section class="admin-card collection-card">
-      <div class="card-head"><div><span class:list={['status-pill', `status-${collection.status}`]}>{collection.status}</span><h2>{collection.name}</h2></div>
-        {role === 'owner' && <form method="post" action="/api/admin/publish"><input type="hidden" name="entity" value="collections" /><input type="hidden" name="id" value={collection.id} /><input type="hidden" name="version" value={collection.version} /><input type="hidden" name="status" value={collection.status === 'published' ? 'draft' : 'published'} /><input type="hidden" name="returnTo" value="/admin/collections" /><button class="button button-secondary" type="submit">{collection.status === 'published' ? 'Move to draft' : 'Publish'}</button></form>}
-      </div>
-      <form class="admin-form" method="post" action={`/api/admin/collections/${collection.id}`}>
-        <div class="form-grid">
-          <div class="field"><label>Name</label><input name="name" maxlength="100" value={collection.name} required /></div>
-          <div class="field"><label>Slug</label><input name="slug" maxlength="100" value={collection.slug} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></div>
-          <div class="field"><label>Eyebrow</label><input name="eyebrow" maxlength="100" value={collection.eyebrow} required /></div>
-          <div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={collection.position} required /></div>
-          <div class="field field-wide"><label>Description</label><textarea name="description" maxlength="1000" required>{collection.description}</textarea></div>
-          <div class="field"><label>Image path</label><input name="imagePath" maxlength="500" value={collection.image_path} required /></div>
-          <div class="field"><label>Alternative text</label><input name="imageAlt" maxlength="240" value={collection.image_alt} required /></div>
-          <div class="field"><label>SEO title</label><input name="seoTitle" maxlength="70" value={collection.seo_title ?? ''} /></div>
-          <div class="field"><label>SEO description</label><input name="seoDescription" maxlength="170" value={collection.seo_description ?? ''} /></div>
-        </div>
-        <input type="hidden" name="version" value={collection.version} />
-        <button class="button button-primary" type="submit">Save collection</button>
-      </form>
-    </section>
-  ))}
-</AdminLayout>
-
-<style>
-  .notice{margin-bottom:1rem}.collection-card{margin-bottom:1rem}.card-head{display:flex;align-items:start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}.card-head h2{margin-top:.5rem}
-</style>
+<AdminLayout title="Collections" description="Merchandise Velora watch collections." active="collections"><div class="admin-page-head"><div><p class="eyebrow">Catalogue structure</p><h2>Collections</h2><p>Build visual product families and control their position on the storefront.</p></div></div>{saved&&<p class="notice notice-success">Collection saved.</p>}{error&&<p class="notice notice-error">The collection could not be saved.</p>}<details class="admin-card create-panel"><summary><Plus size={16}/> New collection</summary><form class="admin-form" method="post" action="/api/admin/collections"><div class="form-grid"><div class="field"><label>Name</label><input name="name" maxlength="100" required/></div><div class="field"><label>URL slug</label><input name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required/></div><div class="field"><label>Small heading</label><input name="eyebrow" maxlength="100" required/></div><div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={collections.length}/></div></div><div class="field"><label>Description</label><textarea name="description" maxlength="1000" required></textarea></div><div class="form-grid"><div class="field"><label>Image path</label><input name="imagePath" value="/images/meridian.webp" required/></div><div class="field"><label>Image description</label><input name="imageAlt" maxlength="240" required/></div><div class="field"><label>SEO title</label><input name="seoTitle" maxlength="70"/></div><div class="field"><label>SEO description</label><input name="seoDescription" maxlength="170"/></div></div><button class="button button-primary">Create draft</button></form></details><div class="admin-grid">{collections.map((collection:any)=><a class="admin-card-link" href={`/admin/collections/${collection.id}`}><img src={collection.image_path} alt="" loading="lazy"/><span class="admin-card-link-content"><span class:list={['status-pill',`status-${collection.status}`]}>{collection.status}</span><h3>{collection.name}</h3><p>{collection.eyebrow}</p><p>{collection.description}</p></span></a>)}</div></AdminLayout>
+<style>.notice,.create-panel{margin-bottom:1rem}.create-panel summary{display:flex;gap:.5rem;align-items:center;cursor:pointer;color:var(--champagne-pale);font-size:.75rem;text-transform:uppercase}.create-panel[open] summary{padding-bottom:1rem;margin-bottom:1rem;border-bottom:1px solid var(--line)}</style>

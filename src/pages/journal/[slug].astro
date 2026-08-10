@@ -17,7 +17,7 @@ const date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', y
   <article>
     <header class="article-header narrow">
       <a class="back-link" href="/journal"><ArrowLeft size={16} /> Journal</a>
-      <p class="eyebrow">{date}</p>
+      <p class="eyebrow">{post.category?.name ?? 'Velora journal'} · {date} · {post.readingMinutes ?? 1} min read</p>
       <h1>{post.title}</h1>
       <p class="article-deck">{post.excerpt}</p>
     </header>
@@ -30,9 +30,7 @@ const date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', y
         sizes="100vw"
       />
     </div>
-    <div class="rich-text narrow article-body">
-      {post.body.map((paragraph, index) => index === 1 ? <><h2>A considered perspective</h2><p>{paragraph}</p></> : <p>{paragraph}</p>)}
-    </div>
+    <div class="rich-text narrow article-body" set:html={post.bodyHtml ?? post.body.map((paragraph) => `<p>${paragraph}</p>`).join('')}></div>
   </article>
 </BaseLayout>
 

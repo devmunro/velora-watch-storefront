@@ -1,0 +1,40 @@
+---
+import { estimateReadingMinutes, renderMarkdown } from '../../lib/server/markdown';
+
+interface Props { editor: any; mode: 'create' | 'edit'; }
+const { editor, mode } = Astro.props;
+const post = editor.post;
+const action = mode === 'create' ? '/api/admin/journal' : `/api/admin/journal/${post.id}`;
+const relatedIds = new Set((post?.related ?? []).map((item: any) => item.product_id));
+const body = post?.body ?? '';
+const preview = body ? renderMarkdown(body) : '<p>Your formatted preview will appear here after you begin writing.</p>';
+const reading = estimateReadingMinutes(body);
+---
+
+<form class="editor-form" method="post" action={action}>
+  <div class="editor-main">
+    <section class="admin-card admin-form">
+      <div class="form-grid"><div class="field"><label for="title">Article title</label><input id="title" name="title" maxlength="160" value={post?.title ?? ''} required/></div><div class="field"><label for="slug">URL slug</label><input id="slug" name="slug" maxlength="140" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={post?.slug ?? ''} required/></div></div>
+      <div class="field"><label for="excerpt">Short introduction</label><textarea id="excerpt" name="excerpt" maxlength="300" required>{post?.excerpt ?? ''}</textarea><small>Used on journal cards and search results.</small></div>
+      <div class="field"><label for="body">Article body (Markdown)</label><textarea id="body" class="markdown-source" name="body" maxlength="12000" required>{body}</textarea><small>Use ## for section headings, **bold**, *italic*, lists and links. Preview is sanitised before display.</small></div>
+    </section>
+    <section class="admin-card preview-card"><div class="preview-head"><div><p class="eyebrow">Reading preview</p><h2>{post?.title || 'Untitled article'}</h2></div><span>{reading} min read</span></div><div class="rich-text preview-body" set:html={preview}></div></section>
+  </div>
+  <aside class="editor-aside">
+    <section class="admin-card admin-form"><p class="eyebrow">Editorial details</p><div class="field"><label>Author</label><input name="authorName" maxlength="100" value={post?.author_name ?? 'Velora Editorial'} required/></div><div class="field"><label>Category</label><select name="categoryId"><option value="">Uncategorised</option>{editor.categories.map((category:any)=><option value={category.id} selected={category.id===post?.category_id}>{category.name}</option>)}</select></div><label class="check-row"><input type="checkbox" name="featured" value="true" checked={post?.featured}/> Feature this article</label></section>
+    <section class="admin-card admin-form"><p class="eyebrow">Cover image</p><div class="field"><label>Image path</label><input name="imagePath" maxlength="500" value={post?.image_path ?? '/images/meridian.webp'} required/></div><div class="field"><label>Alternative text</label><input name="imageAlt" maxlength="240" value={post?.image_alt ?? ''} required/></div>{editor.media.length > 0 && <div class="field"><label>Choose published media</label><select data-media-picker><option value="">Keep current path</option>{editor.media.map((item:any)=><option value={item.public_url}>{item.product?.name ?? 'Catalogue image'} — {item.alt_text}</option>)}</select></div>}</section>
+    <section class="admin-card admin-form"><p class="eyebrow">Related watches</p><div class="check-list">{editor.products.map((product:any)=><label><input type="checkbox" name="relatedProductIds" value={product.id} checked={relatedIds.has(product.id)}/> {product.name}</label>)}</div></section>
+    <section class="admin-card admin-form"><p class="eyebrow">Search appearance</p><div class="field"><label>SEO title</label><input name="seoTitle" maxlength="70" value={post?.seo_title ?? ''}/></div><div class="field"><label>SEO description</label><textarea name="seoDescription" maxlength="170">{post?.seo_description ?? ''}</textarea></div></section>
+    {post && <input type="hidden" name="version" value={post.version}/>}<button class="button button-primary save-button" type="submit">{mode === 'create' ? 'Create draft' : 'Save article'}</button>
+  </aside>
+</form>
+
+<script>
+  const picker = document.querySelector('[data-media-picker]') as globalThis.HTMLSelectElement | null;
+  picker?.addEventListener('change', () => {
+    const path = document.querySelector('input[name="imagePath"]') as globalThis.HTMLInputElement | null;
+    if (path && picker.value) path.value = picker.value;
+  });
+</script>
+
+<style>.editor-form{display:grid;grid-template-columns:minmax(0,1fr) 20rem;align-items:start;gap:1rem}.editor-main,.editor-aside{display:grid;gap:1rem}.markdown-source{min-height:28rem;font-family:ui-monospace,monospace;line-height:1.65}.field small{color:var(--ink-dim);font-size:.67rem}.preview-head{display:flex;align-items:start;justify-content:space-between;gap:1rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}.preview-head h2{font-size:2.2rem!important}.preview-head span{white-space:nowrap;color:var(--champagne);font-size:.7rem}.preview-body{padding-top:1rem}.check-row,.check-list label{display:flex;align-items:center;gap:.6rem;color:var(--ink-soft);font-size:.75rem}.check-list{display:grid;gap:.65rem}.check-row input,.check-list input{width:auto}.save-button{width:100%}@media(max-width:70rem){.editor-form{grid-template-columns:1fr}.editor-aside{grid-template-columns:repeat(2,minmax(0,1fr))}.save-button{grid-column:1/-1}}@media(max-width:42rem){.editor-aside{grid-template-columns:1fr}}</style>
