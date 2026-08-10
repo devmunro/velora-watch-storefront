@@ -5,13 +5,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 export const prerender = false;
 
-if (Astro.locals.user) return Astro.redirect('/admin');
+if (Astro.locals.user && Astro.locals.staffRole) return Astro.redirect('/admin');
 
 const sent = Astro.url.searchParams.get('sent') === '1';
 const error = Astro.url.searchParams.get('error');
 const configured = Astro.locals.supabaseConfigured;
 const errorMessage = error === 'rate-limit'
   ? 'Email sending is temporarily rate-limited. Wait for the email limit to reset, then try again.'
+  : error === 'not-authorized'
+    ? 'This account is signed in, but it has not been granted Velora staff access.'
   : error
     ? 'We could not complete that request. Check the details and try again.'
     : null;

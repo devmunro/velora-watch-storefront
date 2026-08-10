@@ -89,7 +89,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         status: 403,
       });
     }
-    return context.redirect('/account?admin=denied', 303);
+    return context.redirect('/admin/sign-in?error=not-authorized', 303);
   }
 
   if (pathname.startsWith('/admin/') && staffRole) {
