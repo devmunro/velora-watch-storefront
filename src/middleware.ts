@@ -7,6 +7,13 @@ import { createRequestSupabase, getStaffRole } from './lib/server/supabase';
 const protectedAccountPath = /^\/account(?:\/|$)/;
 const protectedCheckoutPath = /^\/checkout\/success(?:\/|$)/;
 const publicAccountPaths = new Set(['/account/sign-in', '/admin/sign-in']);
+const portfolioFrameAncestors = [
+  "'self'",
+  'https://highforce.agency',
+  'https://www.highforce.agency',
+  'http://192.168.1.247:5173',
+].join(' ');
+
 function applySecurityHeaders(response: Response, request: Request, authenticated: boolean) {
   const headers = response.headers;
   const pathname = new URL(request.url).pathname;
@@ -16,14 +23,26 @@ function applySecurityHeaders(response: Response, request: Request, authenticate
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
     );
 
-  headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; base-uri 'self'; connect-src 'self' https://*.supabase.co; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob: https://*.supabase.co; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'",
-  );
+  const frameAncestors = isSensitive ? "'none'" : portfolioFrameAncestors;
+  headers.set('Content-Security-Policy', [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "connect-src 'self' https://*.supabase.co",
+    "font-src 'self'",
+    "form-action 'self'",
+    `frame-ancestors ${frameAncestors}`,
+    "img-src 'self' data: blob: https://*.supabase.co",
+    "object-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+  ].join('; '));
   headers.set('Permissions-Policy', 'camera=(), geolocation=(), microphone=(), payment=()');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('X-Content-Type-Options', 'nosniff');
-  headers.set('X-Frame-Options', 'DENY');
+
+  // X-Frame-Options cannot express an origin allowlist, so CSP governs public previews.
+  if (isSensitive) headers.set('X-Frame-Options', 'DENY');
+  else headers.delete('X-Frame-Options');
 
   if (new URL(request.url).protocol === 'https:') {
     headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
