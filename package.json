@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",
+    "postbuild": "node scripts/patch-worker-config.mjs",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "verify": "pnpm lint && pnpm test && pnpm build",

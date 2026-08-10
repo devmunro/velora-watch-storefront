@@ -1,0 +1,78 @@
+---
+import { LockKeyhole, Mail } from '@lucide/astro';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+if (Astro.locals.user) return Astro.redirect('/admin');
+
+const sent = Astro.url.searchParams.get('sent') === '1';
+const error = Astro.url.searchParams.get('error');
+const configured = Astro.locals.supabaseConfigured;
+const errorMessage = error === 'rate-limit'
+  ? 'Too many codes have been requested. Please wait ten minutes and try again.'
+  : error
+    ? 'We could not complete that request. Check the details and try again.'
+    : null;
+---
+
+<BaseLayout
+  title="Administration sign in"
+  description="Secure Velora administration sign in."
+  noindex
+>
+  <section class="admin-login">
+    <div class="admin-login-card">
+      <a class="back-link" href="/">Return to Velora</a>
+      <p class="eyebrow">Velora administration</p>
+      <h1>{sent ? 'Enter your code.' : 'Administration sign in.'}</h1>
+      <p class="copy">
+        {sent
+          ? 'Enter the six-digit code sent to your authorised email address.'
+          : 'Use your authorised Velora staff email address to continue.'}
+      </p>
+
+      {!configured && <p class="notice" role="status">Secure sign-in is temporarily unavailable.</p>}
+      {errorMessage && <p class="notice notice-error" role="alert">{errorMessage}</p>}
+
+      {sent ? (
+        <form method="post" action="/api/auth/verify-code">
+          <label for="code">Six-digit code</label>
+          <div class="input-wrap">
+            <LockKeyhole size={18} aria-hidden="true" />
+            <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required />
+          </div>
+          <button class="button button-primary" type="submit">Verify and continue</button>
+          <a class="restart" href="/admin/sign-in">Use another email address</a>
+        </form>
+      ) : (
+        <form method="post" action="/api/auth/request-code">
+          <label for="email">Authorised email address</label>
+          <div class="input-wrap">
+            <Mail size={18} aria-hidden="true" />
+            <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required />
+          </div>
+          <input type="hidden" name="returnTo" value="/admin" />
+          <button class="button button-primary" type="submit" disabled={!configured}>Email me a code</button>
+        </form>
+      )}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .admin-login { min-height: 65vh; display: grid; place-items: center; padding: 4rem 1.5rem; }
+  .admin-login-card { width: min(100%, 30rem); max-width: 30rem; }
+  .back-link { display: inline-block; margin-bottom: 4rem; color: var(--ink-soft); font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; }
+  h1 { margin: .75rem 0 1rem; font-family: var(--font-serif); font-size: clamp(3rem, 7vw, 5rem); font-weight: 400; line-height: .9; }
+  .copy { color: var(--ink-soft); }
+  form { display: grid; gap: 1rem; margin-top: 2rem; }
+  label { color: var(--ink-soft); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+  .input-wrap { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: .75rem; border: 1px solid var(--line-strong); padding: .75rem 1rem; }
+  .input-wrap input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); }
+  .button { width: 100%; }
+  .restart { color: var(--ink-soft); text-align: center; font-size: .8rem; text-decoration: underline; }
+  .notice { margin-top: 1.5rem; border: 1px solid var(--line); padding: 1rem; color: var(--ink-soft); }
+  .notice-error { border-color: #8e5e5e; }
+</style>

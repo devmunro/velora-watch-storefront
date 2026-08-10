@@ -6,7 +6,7 @@ import { createRequestSupabase, getStaffRole } from './lib/server/supabase';
 
 const protectedAccountPath = /^\/account(?:\/|$)/;
 const protectedCheckoutPath = /^\/checkout\/success(?:\/|$)/;
-const publicAccountPaths = new Set(['/account/sign-in']);
+const publicAccountPaths = new Set(['/account/sign-in', '/admin/sign-in']);
 function applySecurityHeaders(response: Response, request: Request, authenticated: boolean) {
   const headers = response.headers;
   const pathname = new URL(request.url).pathname;
@@ -70,7 +70,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect(`/account/sign-in?returnTo=${returnTo}`, 307);
   }
 
-  if (pathname.startsWith('/admin') && !user) {
+  if (pathname.startsWith('/admin') && !user && pathname !== '/admin/sign-in') {
     const returnTo = encodeURIComponent(`${pathname}${context.url.search}`);
     return context.redirect(`/account/sign-in?returnTo=${returnTo}`, 307);
   }
