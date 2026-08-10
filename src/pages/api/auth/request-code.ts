@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { isSameOriginRequest, readForm, redirect, safeReturnPath } from '../../../lib/server/http';
 import { consumeEmailCodeLimit } from '../../../lib/server/rate-limit';
+import { getRuntimeEnvironment } from '../../../lib/server/runtime-env';
 import { createRequestSupabase } from '../../../lib/server/supabase';
 
 export const prerender = false;
@@ -35,9 +36,13 @@ export const POST: APIRoute = async (context) => {
     }
 
     const supabase = createRequestSupabase(context);
+    const siteUrl = getRuntimeEnvironment().PUBLIC_SITE_URL ?? context.url.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${siteUrl}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
+      },
     });
 
     if (error) {
