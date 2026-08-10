@@ -38,7 +38,7 @@ const specs = JSON.stringify(product.specifications ?? {}, null, 2);
       <div class="form-grid">
         <div class="field"><label>Name</label><input name="name" maxlength="120" value={product.name} required /></div>
         <div class="field"><label>Slug</label><input name="slug" maxlength="120" value={product.slug} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></div>
-        <div class="field"><label>Collection</label><select name="collectionId"><option value="">Unassigned</option>{result.collections.map((collection: any) => <option value={collection.id} selected={collection.id === product.collection_id}>{collection.name}</option>)}</select></div>
+        <div class="field"><label>Category (optional)</label><select name="collectionId"><option value="">Uncategorised</option>{result.collections.map((collection: any) => <option value={collection.id} selected={collection.id === product.collection_id}>{collection.name}</option>)}</select><small>Categories help customers browse similar watches.</small></div>
         <div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={product.position} required /></div>
         <div class="field field-wide"><label>Short description</label><textarea name="shortDescription" maxlength="280" required>{product.short_description}</textarea></div>
         <div class="field field-wide"><label>Full description</label><textarea name="description" maxlength="4000" required>{product.description}</textarea></div>

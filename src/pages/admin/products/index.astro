@@ -1,8 +1,8 @@
 ---
+import { Plus } from '@lucide/astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { formatMoney } from '../../../data/catalog';
 import { getAdminProducts } from '../../../lib/server/admin';
-import { Plus } from '@lucide/astro';
 
 export const prerender = false;
 const products = await getAdminProducts();
@@ -11,29 +11,8 @@ const collectionName = (value: unknown) => Array.isArray(value) ? value[0]?.name
 ---
 
 <AdminLayout title="Products" description="Manage Velora products, variants and prices." active="products">
-  <div class="admin-page-head">
-    <div><p class="eyebrow">Catalogue</p><h2>Products and variants</h2><p>Edit product copy, specifications, pricing and publication status.</p></div>{role==='owner'&&<a class="button button-primary" href="/admin/products/new"><Plus size={15}/> New product</a>}
-  </div>
-  <div class="admin-table-wrap">
-    <table class="admin-table">
-      <thead><tr><th>Product</th><th>Collection</th><th>Variants</th><th>Starting price</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        {products.map((product: any) => (
-          <tr>
-            <td><strong>{product.name}</strong><br /><small>{product.slug}</small></td>
-            <td>{collectionName(product.collection) ?? 'Unassigned'}</td>
-            <td>{product.variants?.length ?? 0}</td>
-            <td>{product.variants?.length ? formatMoney(Math.min(...product.variants.map((variant: any) => variant.price_amount))) : '—'}</td>
-            <td><span class:list={['status-pill', `status-${product.status}`]}>{product.status}</span></td>
-            <td><a href={`/admin/products/${product.id}`}>Edit</a></td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+  <div class="admin-page-head"><div><p class="eyebrow">Catalogue</p><h2>Products</h2><p>Add and manage every watch, its variants, price and stock. Categories are optional.</p></div>{role==='owner'&&<a class="button button-primary" href="/admin/products/new"><Plus size={15}/> New product</a>}</div>
+  <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Product</th><th>Category</th><th>Variants</th><th>Starting price</th><th>Status</th><th></th></tr></thead><tbody>{products.map((product:any)=><tr><td><strong>{product.name}</strong><br/><small>{product.slug}</small></td><td>{collectionName(product.collection)??'Uncategorised'}</td><td>{product.variants?.length??0}</td><td>{product.variants?.length?formatMoney(Math.min(...product.variants.map((variant:any)=>variant.price_amount))):'—'}</td><td><span class:list={['status-pill',`status-${product.status}`]}>{product.status}</span></td><td><a href={`/admin/products/${product.id}`}>Edit</a></td></tr>)}</tbody></table></div>
 </AdminLayout>
 
-<style>
-  td strong { color:var(--ink);font-weight:500; }
-  td small { color:var(--ink-dim); }
-</style>
+<style>td strong{color:var(--ink);font-weight:500}td small{color:var(--ink-dim)}</style>

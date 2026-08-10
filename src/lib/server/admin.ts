@@ -180,12 +180,13 @@ export async function getAdminPolicies() {
 
 export async function getAdminInventory() {
   const admin = createSupabaseAdmin();
-  const [inventory, reservations, movements] = await Promise.all([
+  const [inventory, variants, reservations, movements] = await Promise.all([
     admin
       .schema('private')
       .from('inventory')
-      .select('*,variant:product_variants(id,sku,name,product:products(name))')
+      .select('*')
       .order('on_hand'),
+    admin.from('product_variants').select('id,sku,name,product:products(name)'),
     admin
       .schema('private')
       .from('inventory_reservations')
@@ -199,8 +200,12 @@ export async function getAdminInventory() {
       .order('created_at', { ascending: false })
       .limit(30),
   ]);
-  if (inventory.error || reservations.error || movements.error) throw new Error('Unable to load inventory.');
-  return { inventory: inventory.data ?? [], reservations: reservations.data ?? [], movements: movements.data ?? [] };
+  if (inventory.error || variants.error || reservations.error || movements.error) throw new Error('Unable to load inventory.');
+  const variantsById = new Map((variants.data ?? []).map((variant) => [variant.id, variant]));
+  return {
+    inventory: (inventory.data ?? []).map((item) => ({ ...item, variant: variantsById.get(item.variant_id) ?? null })),
+    reservations: reservations.data ?? [], movements: movements.data ?? [],
+  };
 }
 
 export async function getAdminOrders() {
@@ -226,13 +231,18 @@ export async function getAdminMedia() {
     admin
       .schema('private')
       .from('media_uploads')
-      .select('*,product:products(name)')
+      .select('*')
       .order('created_at', { ascending: false }),
     admin.from('products').select('id,name').order('name'),
     admin.from('product_media').select('*,product:products(name)').order('product_id').order('position'),
   ]);
   if (uploads.error || products.error || catalogueMedia.error) throw new Error('Unable to load media.');
-  return { uploads: uploads.data ?? [], products: products.data ?? [], catalogueMedia: (catalogueMedia.data ?? []).map((item) => ({ ...item, public_url: admin.storage.from('catalogue').getPublicUrl(item.storage_path).data.publicUrl })) };
+  const productsById = new Map((products.data ?? []).map((product) => [product.id, product]));
+  return {
+    uploads: (uploads.data ?? []).map((upload) => ({ ...upload, product: upload.product_id ? productsById.get(upload.product_id) ?? null : null })),
+    products: products.data ?? [],
+    catalogueMedia: (catalogueMedia.data ?? []).map((item) => ({ ...item, public_url: admin.storage.from('catalogue').getPublicUrl(item.storage_path).data.publicUrl })),
+  };
 }
 
 export async function getAdminStaff() {

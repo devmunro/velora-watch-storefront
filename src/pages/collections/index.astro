@@ -9,12 +9,12 @@ const collections = await getPublishedCollections();
 ---
 
 <BaseLayout
-  title="Collections"
+  title="Categories"
   description="Explore Velora Atelier, Heritage and Voyager—three watch collections shaped around how time is lived."
 >
   <header class="page-intro">
     <div class="shell">
-      <p class="eyebrow">Velora collections</p>
+      <p class="eyebrow">Watch categories</p>
       <h1 class="page-title">Three expressions of time.</h1>
       <p class="section-copy">From measured performance to quiet refinement and purposeful travel.</p>
     </div>
@@ -26,7 +26,7 @@ const collections = await getPublishedCollections();
           <ResponsiveImage src={collection.image} alt={collection.imageAlt} sizes="(max-width: 768px) 100vw, 55vw" />
         </a>
         <div class="collection-copy">
-          <p class="eyebrow">Collection {String(index + 1).padStart(2, '0')}</p>
+          <p class="eyebrow">Category {String(index + 1).padStart(2, '0')}</p>
           <h2>{collection.name}</h2>
           <p>{collection.summary}</p>
           <a class="text-link" href={`/collections/${collection.slug}`}>

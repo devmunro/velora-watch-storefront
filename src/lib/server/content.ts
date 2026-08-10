@@ -244,7 +244,7 @@ export async function getPublishedPolicy(slug: string) {
 
 const fallbackNavigation = [
   { id: 'watches', label: 'Watches', href: '/watches' },
-  { id: 'collections', label: 'Collections', href: '/collections' },
+  { id: 'collections', label: 'Categories', href: '/collections' },
   { id: 'accessories', label: 'Accessories', href: '/accessories' },
   { id: 'about', label: 'About us', href: '/about' },
   { id: 'journal', label: 'Journal', href: '/journal' },
