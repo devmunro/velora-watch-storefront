@@ -21,7 +21,8 @@
     "db:test": "supabase test db",
     "admin:grant-owner": "node --env-file-if-exists=.env scripts/grant-owner.mjs",
     "predeploy": "pnpm build",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "secrets:sync": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-worker-secrets.ps1"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.2.0",

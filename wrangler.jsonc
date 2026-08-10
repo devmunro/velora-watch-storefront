@@ -15,6 +15,8 @@
     }
   ],
   "vars": {
+    // Public configuration is safe to keep in source and is injected into local
+    // development and every deployment. Private keys belong in Cloudflare Secrets.
     "PUBLIC_SUPABASE_URL": "https://axgmdldbwrspmwxeemvb.supabase.co",
     "PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_WJfgCa4Qgx72EldohC33Cw_NwYdmDRd",
     "PUBLIC_SITE_URL": "https://velora-storefront.highforce.workers.dev"

@@ -1,6 +1,6 @@
-PUBLIC_SUPABASE_URL=
-PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-SUPABASE_SECRET_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-PUBLIC_SITE_URL=http://127.0.0.1:4321
+# Copy this file to .dev.vars for local Cloudflare development.
+# Never commit .dev.vars or paste these values into wrangler.jsonc.
+
+SUPABASE_SECRET_KEY=sb_secret_replace_me
+STRIPE_SECRET_KEY=sk_test_replace_me
+STRIPE_WEBHOOK_SECRET=whsec_replace_me
