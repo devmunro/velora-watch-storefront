@@ -30,9 +30,10 @@ export const POST: APIRoute = async (context) => {
     }
 
     const returnTo = safeReturnPath(parsed.data.returnTo);
+    const signInPath = returnTo.startsWith('/admin') ? '/admin/sign-in' : '/account/sign-in';
     const allowed = await consumeEmailCodeLimit(parsed.data.email, context.request);
     if (!allowed) {
-      return redirect(`/account/sign-in?error=rate-limit&returnTo=${encodeURIComponent(returnTo)}`);
+      return redirect(`${signInPath}?error=rate-limit&returnTo=${encodeURIComponent(returnTo)}`);
     }
 
     const supabase = createRequestSupabase(context);
@@ -46,7 +47,9 @@ export const POST: APIRoute = async (context) => {
     });
 
     if (error) {
-      return redirect('/account/sign-in?error=code-request');
+      const status = (error as { status?: number }).status;
+      const reason = status === 429 ? 'rate-limit' : 'code-request';
+      return redirect(`${signInPath}?error=${reason}&returnTo=${encodeURIComponent(returnTo)}`);
     }
 
     const secure = import.meta.env.PROD;

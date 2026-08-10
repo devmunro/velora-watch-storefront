@@ -13,7 +13,7 @@ const error = Astro.url.searchParams.get('error');
 const returnTo = Astro.url.searchParams.get('returnTo') ?? '/account';
 const configured = Astro.locals.supabaseConfigured;
 const errorMessage = error === 'rate-limit'
-  ? 'Too many codes have been requested. Please wait ten minutes and try again.'
+  ? 'Email sending is temporarily rate-limited. Wait for the email limit to reset, then try again.'
   : error
     ? 'We could not complete that request. Check the details and try again.'
     : null;
