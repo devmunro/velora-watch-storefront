@@ -11,6 +11,7 @@ import {
   type Product,
 } from '../../data/catalog';
 import { createPublicSupabase } from './supabase';
+import { renderMarkdown } from './markdown';
 
 type PublicContent = {
   benefits: Array<{ title: string; copy: string; icon: string }>;
@@ -31,6 +32,11 @@ type PublicContent = {
   journalPosts: JournalPost[];
   policies: PolicyPage[];
   products: Product[];
+  homepageSections: Array<{
+    key: string; eyebrow: string; heading: string; accent: string | null; body: string;
+    image: string | null; imageAlt: string | null; primaryLabel: string | null; primaryHref: string | null;
+    featuredProductId: string | null; featuredJournalPostId: string | null;
+  }>;
 };
 
 const fallback: PublicContent = {
@@ -40,6 +46,12 @@ const fallback: PublicContent = {
   journalPosts: fallbackJournalPosts,
   policies: fallbackPolicies,
   products: fallbackProducts,
+  homepageSections: [
+    { key:'collections',eyebrow:'Our collections',heading:'Find the perfect watch for your style.',accent:null,body:'Explore Velora timepieces selected for distinct expressions of modern life.',image:null,imageAlt:null,primaryLabel:'View all collections',primaryHref:'/collections',featuredProductId:null,featuredJournalPostId:null },
+    { key:'standard',eyebrow:'The Velora standard',heading:'Precision you can feel.',accent:null,body:'Every Velora timepiece begins with proportion and purpose. From sapphire crystal to the final brushed surface, each detail is chosen to serve the watch for years to come.',image:'/images/aster.webp',imageAlt:'Aster Automatic watch in silver steel',primaryLabel:'Discover our approach',primaryHref:'/about',featuredProductId:null,featuredJournalPostId:null },
+    { key:'spotlight',eyebrow:'An icon in black',heading:'Meridian',accent:'Chronograph.',body:'Defined by warm metallic details, deep contrast and timing controls made to be used.',image:'/images/meridian.webp',imageAlt:'Meridian Chronograph on a black leather strap',primaryLabel:'View Meridian',primaryHref:'/watches/meridian-chronograph',featuredProductId:fallbackProducts[0]?.id ?? null,featuredJournalPostId:null },
+    { key:'journal',eyebrow:'From the journal',heading:'Notes on time.',accent:null,body:'Design, movements and the details that make a watch part of everyday life.',image:null,imageAlt:null,primaryLabel:'Read the story',primaryHref:'/journal',featuredProductId:null,featuredJournalPostId:fallbackJournalPosts[0]?.id ?? null },
+  ],
 };
 
 function specifications(value: unknown): Product['specifications'] {
@@ -65,7 +77,7 @@ export async function getPublicContent(): Promise<PublicContent> {
   if (!supabase) return fallback;
 
   try {
-    const [heroResult, benefitResult, collectionResult, productResult, journalResult, policyResult] =
+    const [heroResult, benefitResult, collectionResult, productResult, journalResult, policyResult, sectionResult] =
       await Promise.all([
         supabase
           .from('hero_slides')
@@ -83,10 +95,11 @@ export async function getPublicContent(): Promise<PublicContent> {
           .order('position', { referencedTable: 'product_variants' }),
         supabase
           .from('journal_posts')
-          .select('*')
+          .select('*,category:journal_categories(name,slug)')
           .eq('status', 'published')
           .order('published_at', { ascending: false }),
         supabase.from('policy_pages').select('*').eq('status', 'published').order('title'),
+        supabase.from('homepage_sections').select('*').eq('status', 'published').eq('visible', true).order('position'),
       ]);
 
     if (
@@ -95,7 +108,7 @@ export async function getPublicContent(): Promise<PublicContent> {
       collectionResult.error ||
       productResult.error ||
       journalResult.error ||
-      policyResult.error
+      policyResult.error || sectionResult.error
     ) {
       return fallback;
     }
@@ -144,9 +157,14 @@ export async function getPublicContent(): Promise<PublicContent> {
       title: item.title,
       excerpt: item.excerpt,
       body: paragraphs(item.body),
+      bodyHtml: renderMarkdown(item.body),
       publishedAt: item.published_at,
       image: item.image_path,
       imageAlt: item.image_alt,
+      authorName: item.author_name,
+      category: collectionRecord(item.category) as { name: string; slug: string } | null,
+      featured: item.featured,
+      readingMinutes: item.reading_minutes,
     }));
 
     const policies: PolicyPage[] = (policyResult.data ?? []).map((item: any) => ({
@@ -154,6 +172,7 @@ export async function getPublicContent(): Promise<PublicContent> {
       title: item.title,
       intro: paragraphs(item.body)[0] ?? '',
       sections: [],
+      bodyHtml: renderMarkdown(item.body),
     }));
 
     return {
@@ -179,6 +198,11 @@ export async function getPublicContent(): Promise<PublicContent> {
       products: products.length ? products : fallback.products,
       journalPosts: journalPosts.length ? journalPosts : fallback.journalPosts,
       policies: policies.length ? policies : fallback.policies,
+      homepageSections: (sectionResult.data?.length ? sectionResult.data : fallback.homepageSections).map((item: any) => item.key ? item : ({
+        key: item.section_key, eyebrow: item.eyebrow, heading: item.heading, accent: item.accent, body: item.body,
+        image: item.media_path, imageAlt: item.media_alt, primaryLabel: item.primary_label, primaryHref: item.primary_href,
+        featuredProductId: item.featured_product_id, featuredJournalPostId: item.featured_journal_post_id,
+      })),
     };
   } catch {
     // Public pages remain available from the bundled published snapshot during a data outage.

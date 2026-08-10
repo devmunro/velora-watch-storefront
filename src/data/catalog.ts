@@ -43,6 +43,11 @@ export type JournalPost = {
   publishedAt: string;
   image: string;
   imageAlt: string;
+  authorName?: string;
+  category?: { name: string; slug: string } | null;
+  featured?: boolean;
+  readingMinutes?: number;
+  bodyHtml?: string;
 };
 
 export type PolicyPage = {
@@ -50,6 +55,7 @@ export type PolicyPage = {
   title: string;
   intro: string;
   sections: Array<{ heading: string; paragraphs: string[] }>;
+  bodyHtml?: string;
 };
 
 export const heroSlides = [
@@ -417,7 +423,8 @@ export function formatMoney(amount: number, currency = 'gbp') {
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: currency.toUpperCase(),
-    maximumFractionDigits: 0,
+    minimumFractionDigits: amount % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
   }).format(amount / 100);
 }
 

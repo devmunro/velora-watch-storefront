@@ -72,7 +72,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (pathname.startsWith('/admin') && !user && pathname !== '/admin/sign-in') {
     const returnTo = encodeURIComponent(`${pathname}${context.url.search}`);
-    return context.redirect(`/account/sign-in?returnTo=${returnTo}`, 307);
+    return context.redirect(`/admin/sign-in?returnTo=${returnTo}`, 307);
   }
 
   if (pathname.startsWith('/api/admin') && !user) {

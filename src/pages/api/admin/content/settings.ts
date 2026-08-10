@@ -9,18 +9,18 @@ export const POST: APIRoute = async (context) => {
   const request = await beginAdminMutation(context, ['owner']);
   if ('response' in request) return request.response;
   const parsed = settingsAdminSchema.safeParse(Object.fromEntries(request.form));
-  if (!parsed.success) return adminResultRedirect('/admin/content', 'error');
+  if (!parsed.success) return adminResultRedirect('/admin/settings', 'error');
   const admin = createSupabaseAdmin();
   const { data, error } = await admin.from('site_settings').update({
     announcement: parsed.data.announcement,
-    free_shipping_threshold: parsed.data.freeShippingThreshold,
+    free_shipping_threshold: parsed.data.freeShippingThresholdPounds,
     contact_email: parsed.data.contactEmail,
     default_seo_title: parsed.data.defaultSeoTitle,
     default_seo_description: parsed.data.defaultSeoDescription,
     version: parsed.data.version + 1,
   }).eq('singleton_key', 'primary').eq('version', parsed.data.version).select('id').maybeSingle();
-  if (error) return adminResultRedirect('/admin/content', 'error');
-  if (!data) return adminResultRedirect('/admin/content', 'conflict');
+  if (error) return adminResultRedirect('/admin/settings', 'error');
+  if (!data) return adminResultRedirect('/admin/settings', 'conflict');
   await writeAudit(request.authorization.user.id, request.authorization.role, 'settings.updated', 'site_settings', data.id);
-  return adminResultRedirect('/admin/content');
+  return adminResultRedirect('/admin/settings');
 };

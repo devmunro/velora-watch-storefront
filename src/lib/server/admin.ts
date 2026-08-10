@@ -42,9 +42,9 @@ export async function writeAudit(
   if (error) throw new Error('Unable to record the administrative action.');
 }
 
-export async function getAdminDashboard() {
+export async function getAdminDashboard(userId?: string) {
   const admin = createSupabaseAdmin();
-  const [products, orders, drafts, inventory, reservations] = await Promise.all([
+  const [products, orders, drafts, inventory, reservations, pendingOrders, recentActivity, preferences] = await Promise.all([
     admin.from('products').select('id', { count: 'exact', head: true }),
     admin.from('orders').select('id', { count: 'exact', head: true }),
     admin.from('products').select('id', { count: 'exact', head: true }).eq('status', 'draft'),
@@ -54,6 +54,11 @@ export async function getAdminDashboard() {
       .from('inventory_reservations')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'pending'),
+    admin.from('orders').select('id', { count: 'exact', head: true }).in('status', ['paid', 'processing']),
+    admin.schema('private').from('audit_logs').select('id,action,entity_type,created_at').order('created_at', { ascending: false }).limit(6),
+    userId
+      ? admin.schema('private').from('staff_preferences').select('*').eq('user_id', userId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
   const stock = inventory.data ?? [];
@@ -62,20 +67,39 @@ export async function getAdminDashboard() {
     orderCount: orders.count ?? 0,
     draftCount: drafts.count ?? 0,
     pendingReservationCount: reservations.count ?? 0,
+    pendingOrderCount: pendingOrders.count ?? 0,
     lowStockCount: stock.filter((item) => item.on_hand - item.reserved <= item.low_stock_threshold).length,
+    outOfStockCount: stock.filter((item) => item.on_hand - item.reserved <= 0).length,
+    recentActivity: recentActivity.data ?? [],
+    onboarding: preferences.data,
   };
 }
 
 export async function getAdminContent() {
   const admin = createSupabaseAdmin();
-  const [settings, hero, benefits, navigation] = await Promise.all([
+  const [settings, hero, benefits, navigation, sections, products, collections, journal] = await Promise.all([
     admin.from('site_settings').select('*').eq('singleton_key', 'primary').single(),
     admin.from('hero_slides').select('*').order('position'),
     admin.from('benefits').select('*').order('position'),
     admin.from('navigation_items').select('*').order('position'),
+    admin.from('homepage_sections').select('*').order('position'),
+    admin.from('products').select('id,name,status').order('name'),
+    admin.from('collections').select('id,name,status').order('name'),
+    admin.from('journal_posts').select('id,title,status').order('created_at', { ascending: false }),
   ]);
-  if (settings.error || hero.error || benefits.error || navigation.error) throw new Error('Unable to load site content.');
-  return { settings: settings.data, heroSlides: hero.data ?? [], benefits: benefits.data ?? [], navigation: navigation.data ?? [] };
+  if (settings.error || hero.error || benefits.error || navigation.error || sections.error) throw new Error('Unable to load site content.');
+  return {
+    settings: settings.data,
+    heroSlides: hero.data ?? [], benefits: benefits.data ?? [], navigation: navigation.data ?? [],
+    sections: sections.data ?? [], products: products.data ?? [], collections: collections.data ?? [], journal: journal.data ?? [],
+  };
+}
+
+export async function getAdminSettings() {
+  const admin = createSupabaseAdmin();
+  const { data, error } = await admin.from('site_settings').select('*').eq('singleton_key', 'primary').single();
+  if (error) throw new Error('Unable to load store settings.');
+  return data;
 }
 
 export async function getAdminProducts() {
@@ -98,6 +122,13 @@ export async function getAdminProduct(id: string) {
   return { product: product.data, collections: collections.data ?? [] };
 }
 
+export async function getAdminProductCreator() {
+  const admin = createSupabaseAdmin();
+  const { data, error } = await admin.from('collections').select('id,name,status').order('position');
+  if (error) throw new Error('Unable to load the product creator.');
+  return { collections: data ?? [] };
+}
+
 export async function getAdminCollections() {
   const admin = createSupabaseAdmin();
   const { data, error } = await admin.from('collections').select('*').order('position');
@@ -105,11 +136,39 @@ export async function getAdminCollections() {
   return data ?? [];
 }
 
+export async function getAdminCollection(id: string) {
+  const admin = createSupabaseAdmin();
+  const { data, error } = await admin.from('collections').select('*,products(id,name,status,position)').eq('id', id).maybeSingle();
+  if (error) throw new Error('Unable to load that collection.');
+  return data;
+}
+
 export async function getAdminJournal() {
   const admin = createSupabaseAdmin();
-  const { data, error } = await admin.from('journal_posts').select('*').order('created_at', { ascending: false });
+  const { data, error } = await admin.from('journal_posts').select('*,category:journal_categories(name,slug)').order('created_at', { ascending: false });
   if (error) throw new Error('Unable to load journal posts.');
   return data ?? [];
+}
+
+export async function getAdminJournalEditor(id?: string) {
+  const admin = createSupabaseAdmin();
+  const [post, categories, products, media] = await Promise.all([
+    id
+      ? admin.from('journal_posts').select('*,related:journal_post_products(product_id)').eq('id', id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    admin.from('journal_categories').select('id,name,slug,status').order('position'),
+    admin.from('products').select('id,name,status').order('name'),
+    admin.from('product_media').select('id,storage_path,alt_text,product:products(name)').eq('status', 'published').order('created_at', { ascending: false }),
+  ]);
+  if (post.error || categories.error || products.error || media.error) throw new Error('Unable to load the article editor.');
+  return { post: post.data, categories: categories.data ?? [], products: products.data ?? [], media: (media.data ?? []).map((item) => ({ ...item, public_url: admin.storage.from('catalogue').getPublicUrl(item.storage_path).data.publicUrl })) };
+}
+
+export async function getAdminPolicy(id: string) {
+  const admin = createSupabaseAdmin();
+  const { data, error } = await admin.from('policy_pages').select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error('Unable to load that policy.');
+  return data;
 }
 
 export async function getAdminPolicies() {
@@ -173,7 +232,7 @@ export async function getAdminMedia() {
     admin.from('product_media').select('*,product:products(name)').order('product_id').order('position'),
   ]);
   if (uploads.error || products.error || catalogueMedia.error) throw new Error('Unable to load media.');
-  return { uploads: uploads.data ?? [], products: products.data ?? [], catalogueMedia: catalogueMedia.data ?? [] };
+  return { uploads: uploads.data ?? [], products: products.data ?? [], catalogueMedia: (catalogueMedia.data ?? []).map((item) => ({ ...item, public_url: admin.storage.from('catalogue').getPublicUrl(item.storage_path).data.publicUrl })) };
 }
 
 export async function getAdminStaff() {

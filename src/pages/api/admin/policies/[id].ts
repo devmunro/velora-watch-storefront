@@ -10,11 +10,12 @@ export const POST: APIRoute = async (context) => {
   if ('response' in request) return request.response;
   const id = uuidSchema.safeParse(context.params.id);
   const parsed = policyAdminSchema.safeParse(Object.fromEntries(request.form));
-  if (!id.success || !parsed.success || !parsed.data.version) return adminResultRedirect('/admin/policies', 'error');
+  const returnTo = id.success ? `/admin/policies/${id.data}` : '/admin/policies';
+  if (!id.success || !parsed.success || !parsed.data.version) return adminResultRedirect(returnTo, 'error');
   const result = await updateVersionedRecord('policy_pages', id.data, parsed.data.version, {
     title: parsed.data.title, slug: parsed.data.slug, body: parsed.data.body,
   });
-  if (result.status !== 'updated') return adminResultRedirect('/admin/policies', result.status === 'conflict' ? 'conflict' : 'error');
+  if (result.status !== 'updated') return adminResultRedirect(returnTo, result.status === 'conflict' ? 'conflict' : 'error');
   await writeAudit(request.authorization.user.id, request.authorization.role, 'policy.updated', 'policy_page', id.data);
-  return adminResultRedirect('/admin/policies');
+  return adminResultRedirect(returnTo);
 };

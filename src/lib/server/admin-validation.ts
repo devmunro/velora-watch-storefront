@@ -6,10 +6,11 @@ const slug = z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(140);
 const internalPath = z.string().trim().regex(/^\/(?!\/)/).max(500);
 const version = z.coerce.number().int().positive();
 const position = z.coerce.number().int().min(0).max(999);
+const pounds = z.string().trim().regex(/^\d+(?:\.\d{1,2})?$/).transform((value) => Math.round(Number(value) * 100));
 
 export const settingsAdminSchema = z.object({
   announcement: z.string().trim().min(3).max(160),
-  freeShippingThreshold: z.coerce.number().int().min(0).max(1_000_000),
+  freeShippingThresholdPounds: pounds.refine((value) => value <= 1_000_000),
   contactEmail: z.union([z.literal(''), z.email().max(254)]).transform((value) => value || null),
   defaultSeoTitle: z.string().trim().min(3).max(70),
   defaultSeoDescription: z.string().trim().min(20).max(170),
@@ -55,6 +56,21 @@ export const productAdminSchema = z.object({
   version,
 });
 
+export const productCreateAdminSchema = productAdminSchema.omit({ version: true, specifications: true }).extend({
+  caseSpecification: optionalText(160),
+  movementSpecification: optionalText(160),
+  crystalSpecification: optionalText(160),
+  waterResistanceSpecification: optionalText(160),
+  warrantySpecification: optionalText(160),
+  variantName: z.string().trim().min(2).max(100),
+  sku: z.string().trim().regex(/^[A-Z0-9-]+$/).max(40),
+  finish: z.string().trim().min(2).max(100),
+  strap: z.string().trim().min(2).max(100),
+  pricePounds: pounds.refine((value) => value >= 100 && value <= 10_000_000),
+  initialStock: z.coerce.number().int().min(0).max(100_000),
+  lowStockThreshold: z.coerce.number().int().min(0).max(1000),
+});
+
 export const variantAdminSchema = z.object({
   name: z.string().trim().min(2).max(100),
   sku: z.string().trim().regex(/^[A-Z0-9-]+$/).max(40),
@@ -65,8 +81,14 @@ export const variantAdminSchema = z.object({
   productId: z.uuid(),
 });
 
+export const variantCreateAdminSchema = variantAdminSchema.omit({ version: true }).extend({
+  pricePounds: pounds.refine((value) => value >= 100 && value <= 10_000_000),
+  initialStock: z.coerce.number().int().min(0).max(100_000),
+  lowStockThreshold: z.coerce.number().int().min(0).max(1000),
+});
+
 export const variantPriceAdminSchema = z.object({
-  priceAmount: z.coerce.number().int().min(100).max(10_000_000),
+  pricePounds: pounds.refine((value) => value >= 100 && value <= 10_000_000),
   active: z.boolean(),
   version,
   productId: z.uuid(),
@@ -84,6 +106,7 @@ export const collectionAdminSchema = z.object({
   seoDescription: optionalText(170),
   version,
 });
+export const collectionCreateAdminSchema = collectionAdminSchema.omit({ version: true });
 
 export const journalAdminSchema = z.object({
   title: z.string().trim().min(3).max(160),
@@ -94,7 +117,32 @@ export const journalAdminSchema = z.object({
   imageAlt: z.string().trim().min(5).max(240),
   seoTitle: optionalText(70),
   seoDescription: optionalText(170),
+  authorName: z.string().trim().min(2).max(100),
+  categoryId: z.union([z.literal(''), z.uuid()]).transform((value) => value || null),
+  featured: z.boolean(),
+  relatedProductIds: z.array(z.uuid()).max(12).default([]),
   version: version.optional(),
+});
+
+export const homepageSectionAdminSchema = z.object({
+  eyebrow: z.string().trim().min(2).max(100),
+  heading: z.string().trim().min(2).max(140),
+  accent: optionalText(100),
+  body: z.string().trim().min(10).max(700),
+  mediaPath: z.union([z.literal(''), internalPath]).transform((value) => value || null),
+  mediaAlt: optionalText(240),
+  primaryLabel: optionalText(60),
+  primaryHref: z.union([z.literal(''), internalPath]).transform((value) => value || null),
+  featuredProductId: z.union([z.literal(''), z.uuid()]).transform((value) => value || null),
+  featuredCollectionId: z.union([z.literal(''), z.uuid()]).transform((value) => value || null),
+  featuredJournalPostId: z.union([z.literal(''), z.uuid()]).transform((value) => value || null),
+  position,
+  visible: z.boolean(),
+  version,
+});
+
+export const onboardingAdminSchema = z.object({
+  action: z.enum(['complete', 'dismiss', 'restart']),
 });
 
 export const policyAdminSchema = z.object({
@@ -105,7 +153,7 @@ export const policyAdminSchema = z.object({
 });
 
 export const publishAdminSchema = z.object({
-  entity: z.enum(['products', 'collections', 'hero_slides', 'journal_posts', 'policy_pages', 'product_media', 'navigation_items']),
+  entity: z.enum(['products', 'collections', 'hero_slides', 'homepage_sections', 'journal_posts', 'policy_pages', 'product_media', 'navigation_items']),
   id: z.uuid(),
   version,
   status: z.enum(['draft', 'published']),

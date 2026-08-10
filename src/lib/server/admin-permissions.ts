@@ -10,6 +10,7 @@ export const adminSectionRoles: Record<string, StaffRole[]> = {
   orders: ['owner', 'fulfilment'],
   policies: ['owner', 'editor'],
   products: ['owner', 'editor'],
+  settings: ['owner'],
   staff: ['owner'],
 };
 
