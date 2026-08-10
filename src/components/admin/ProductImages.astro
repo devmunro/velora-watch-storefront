@@ -1,0 +1,243 @@
+---
+import { ImagePlus, Upload } from '@lucide/astro';
+
+interface ProductMedia {
+  id: string;
+  alt_text: string;
+  position: number;
+  public_url: string;
+  status: 'draft' | 'published';
+  version: number;
+}
+
+interface MediaUpload {
+  id: string;
+  original_filename: string;
+  mime_type: string;
+  alt_text: string;
+  status: 'pending_upload' | 'staged' | 'published' | 'rejected';
+  version: number;
+  preview_url?: string | null;
+}
+
+interface Props {
+  productId: string;
+  productName: string;
+  media: ProductMedia[];
+  uploads: MediaUpload[];
+  role: string | null;
+}
+
+const { productId, productName, media, uploads, role } = Astro.props;
+const staged = uploads.filter((upload) => upload.status === 'staged' || upload.status === 'pending_upload');
+---
+
+<section class="product-images" id="images">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Product gallery</p>
+      <h2>Images</h2>
+      <p>Upload and organise photographs for {productName}.</p>
+    </div>
+    <span>{media.length} published</span>
+  </div>
+
+  <div class="image-workspace">
+    <form class="admin-card image-upload" data-product-image-upload>
+      <div>
+        <span class="upload-icon"><ImagePlus size={24} /></span>
+        <p class="eyebrow">Add image</p>
+        <h3>Upload product photography</h3>
+        <p>JPEG, PNG or WebP up to 10 MB.</p>
+      </div>
+
+      <label class="file-choice" for="product-image-file">
+        <input id="product-image-file" name="file" type="file" accept="image/jpeg,image/png,image/webp" required />
+        <Upload size={16} />
+        <span data-file-label>Choose image</span>
+      </label>
+
+      <div class="field">
+        <label for="product-image-alt">Alternative text</label>
+        <input id="product-image-alt" name="altText" maxlength="240" placeholder={`Describe the ${productName} image`} required />
+        <small>Describe the watch, angle and visible finish.</small>
+      </div>
+
+      <input type="hidden" name="productId" value={productId} />
+      <button class="button button-primary" type="submit" disabled data-upload-button>Upload image</button>
+      <p class="upload-message" data-upload-message aria-live="polite"></p>
+    </form>
+
+    <div class="gallery-area">
+      {staged.length > 0 && (
+        <div class="review-stack">
+          <p class="eyebrow">Awaiting approval</p>
+          {staged.map((upload) => (
+            <article class="review-row">
+              <span class="review-preview">
+                {upload.preview_url
+                  ? <img src={upload.preview_url} alt="" loading="lazy" />
+                  : upload.mime_type.split('/')[1]?.toUpperCase()}
+              </span>
+              <div><strong>{upload.original_filename}</strong><small>{upload.alt_text}</small></div>
+              <span class="status-pill">{upload.status === 'staged' ? 'Ready' : 'Uploading'}</span>
+              {role === 'owner' && upload.status === 'staged' && (
+                <form method="post" action={`/api/admin/media/${upload.id}/publish`}>
+                  <input type="hidden" name="version" value={upload.version} />
+                  <input type="hidden" name="returnTo" value={`/admin/products/${productId}`} />
+                  <button class="button button-primary">Publish</button>
+                </form>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {media.length > 0 ? (
+        <div class="image-grid">
+          {media.map((item) => (
+            <article class="image-card">
+              <div class="image-frame">
+                <img src={item.public_url} alt="" loading="lazy" />
+                <span class:list={['status-pill', `status-${item.status}`]}>{item.status}</span>
+              </div>
+              <div class="image-copy">
+                <strong>{item.alt_text}</strong>
+                <small>Gallery position {item.position + 1}</small>
+                <details>
+                  <summary>Edit image</summary>
+                  <form class="admin-form" method="post" action={`/api/admin/media/product/${item.id}`}>
+                    <div class="field"><label>Alternative text</label><input name="altText" maxlength="240" value={item.alt_text} required /></div>
+                    <div class="field"><label>Position</label><input name="position" type="number" min="0" max="999" value={item.position} required /></div>
+                    <input type="hidden" name="version" value={item.version} />
+                    <input type="hidden" name="productId" value={productId} />
+                    <button class="button button-secondary">Save image</button>
+                  </form>
+                  {role === 'owner' && (
+                    <form method="post" action="/api/admin/publish">
+                      <input type="hidden" name="entity" value="product_media" />
+                      <input type="hidden" name="id" value={item.id} />
+                      <input type="hidden" name="version" value={item.version} />
+                      <input type="hidden" name="status" value={item.status === 'published' ? 'draft' : 'published'} />
+                      <input type="hidden" name="returnTo" value={`/admin/products/${productId}`} />
+                      <button class="text-action">{item.status === 'published' ? 'Move to draft' : 'Publish image'}</button>
+                    </form>
+                  )}
+                </details>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : staged.length === 0 && (
+        <div class="gallery-empty">
+          <span><ImagePlus size={28} /></span>
+          <h3>No gallery images yet.</h3>
+          <p>Choose an image on the left to start this product's gallery.</p>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <script>
+    import { createClient } from '@supabase/supabase-js';
+
+    const form = document.querySelector<HTMLFormElement>('[data-product-image-upload]');
+    const fileInput = form?.elements.namedItem('file') as HTMLInputElement | null;
+    const button = document.querySelector<HTMLButtonElement>('[data-upload-button]');
+    const label = document.querySelector<HTMLElement>('[data-file-label]');
+    const message = document.querySelector<HTMLElement>('[data-upload-message]');
+
+    fileInput?.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      if (label) label.textContent = file?.name ?? 'Choose image';
+      if (button) button.disabled = !file;
+    });
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const file = fileInput?.files?.[0];
+      if (!file) return;
+
+      const altText = (form.elements.namedItem('altText') as HTMLInputElement).value;
+      const productId = (form.elements.namedItem('productId') as HTMLInputElement).value;
+      if (button) button.disabled = true;
+      if (message) message.textContent = 'Uploading securely...';
+
+      try {
+        const response = await fetch('/api/admin/media/sign-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, mimeType: file.type, size: file.size, altText, productId }),
+        });
+        const signed = await response.json() as {
+          uploadId?: string; path?: string; token?: string; supabaseUrl?: string; publishableKey?: string; error?: string;
+        };
+        if (!response.ok || !signed.path || !signed.token || !signed.supabaseUrl || !signed.publishableKey || !signed.uploadId) {
+          throw new Error(signed.error ?? 'Upload could not be authorised.');
+        }
+
+        const supabase = createClient(signed.supabaseUrl, signed.publishableKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { error } = await supabase.storage.from('cms-staging').uploadToSignedUrl(signed.path, signed.token, file, {
+          contentType: file.type,
+        });
+        if (error) throw error;
+
+        const complete = await fetch('/api/admin/media/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uploadId: signed.uploadId }),
+        });
+        if (!complete.ok) throw new Error('Upload verification failed.');
+        window.location.assign(`/admin/products/${productId}?saved=1#images`);
+      } catch (error) {
+        if (message) message.textContent = error instanceof Error ? error.message : 'Upload failed.';
+        if (button) button.disabled = false;
+      }
+    });
+  </script>
+</section>
+
+<style>
+  .product-images { margin-top: 3rem; }
+  .section-heading { display:flex;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:1rem; }
+  .section-heading h2 { margin:.2rem 0;font:400 2.5rem/1 var(--font-serif); }
+  .section-heading p { margin:0;color:var(--ink-soft); }
+  .section-heading>span { color:var(--ink-dim);font-size:.68rem; }
+  .image-workspace { display:grid;grid-template-columns:21rem minmax(0,1fr);gap:1rem;align-items:start; }
+  .image-upload { display:grid;gap:1rem;position:sticky;top:1rem; }
+  .upload-icon { display:grid;width:3rem;height:3rem;margin-bottom:1rem;place-items:center;border:1px solid rgba(200,164,118,.35);color:var(--champagne); }
+  .image-upload h3,.gallery-empty h3 { margin:.3rem 0;font:400 1.7rem/1 var(--font-serif); }
+  .image-upload p:not(.eyebrow),.gallery-empty p { margin:0;color:var(--ink-soft);font-size:.72rem; }
+  .file-choice { display:flex;align-items:center;justify-content:center;gap:.55rem;min-height:3rem;border:1px dashed rgba(200,164,118,.5);color:var(--champagne-pale);font-size:.7rem;cursor:pointer; }
+  .file-choice:hover { background:rgba(200,164,118,.05); }
+  .file-choice input { position:absolute;width:1px;height:1px;opacity:0; }
+  .field small { color:var(--ink-dim);font-size:.62rem; }
+  .image-upload button:disabled { opacity:.45; }
+  .upload-message { min-height:1rem;margin:0;color:var(--champagne-pale);font-size:.65rem; }
+  .gallery-area { min-width:0; }
+  .image-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem; }
+  .image-card { overflow:hidden;border:1px solid var(--line);background:var(--surface-raised); }
+  .image-frame { position:relative;aspect-ratio:1.35;background:#050607; }
+  .image-frame img { width:100%;height:100%;object-fit:cover; }
+  .image-frame .status-pill { position:absolute;top:.7rem;left:.7rem;background:rgba(5,7,8,.85); }
+  .image-copy { display:grid;gap:.45rem;padding:1rem; }
+  .image-copy>strong { font-size:.72rem;font-weight:500; }
+  .image-copy>small { color:var(--ink-dim);font-size:.6rem; }
+  .image-copy details { margin-top:.4rem;border-top:1px solid var(--line);padding-top:.7rem; }
+  .image-copy summary { cursor:pointer;color:var(--champagne-pale);font-size:.65rem;text-transform:uppercase; }
+  .image-copy form { margin-top:.8rem; }
+  .text-action { border:0;border-bottom:1px solid var(--line-strong);background:none;padding:.7rem 0 0;color:var(--champagne-pale);font-size:.65rem; }
+  .gallery-empty { display:grid;min-height:24rem;place-items:center;align-content:center;gap:.5rem;border:1px dashed var(--line);text-align:center; }
+  .gallery-empty>span { display:grid;width:4rem;height:4rem;place-items:center;border:1px solid var(--line);color:var(--champagne); }
+  .review-stack { display:grid;gap:.5rem;margin-bottom:1rem; }
+  .review-row { display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:.75rem;border:1px solid var(--line);background:var(--surface-raised);padding:.75rem; }
+  .review-preview { display:grid;width:3.4rem;height:3.4rem;overflow:hidden;place-items:center;border:1px solid var(--line);color:var(--champagne);font-size:.56rem; }
+  .review-preview img { width:100%;height:100%;object-fit:cover; }
+  .review-row>div { display:grid;min-width:0; }
+  .review-row strong { overflow:hidden;font-size:.7rem;text-overflow:ellipsis;white-space:nowrap; }
+  .review-row small { color:var(--ink-dim);font-size:.6rem; }
+  @media(max-width:68rem){.image-workspace{grid-template-columns:1fr}.image-upload{position:static}}
+  @media(max-width:44rem){.image-grid{grid-template-columns:1fr}.section-heading{align-items:start;flex-direction:column}.review-row{grid-template-columns:auto 1fr}.review-row>.status-pill,.review-row>form{grid-column:2}}
+</style>

@@ -22,6 +22,12 @@ export type Product = {
   imageAlt: string;
   featured: boolean;
   specifications: Array<{ label: string; value: string }>;
+  media?: Array<{
+    id: string;
+    image: string;
+    imageAlt: string;
+    position: number;
+  }>;
   variants: ProductVariant[];
 };
 

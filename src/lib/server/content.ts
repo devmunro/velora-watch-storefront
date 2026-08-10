@@ -88,7 +88,7 @@ export async function getPublicContent(): Promise<PublicContent> {
         supabase.from('collections').select('*').eq('status', 'published').order('position'),
         supabase
           .from('products')
-          .select('*, collection:collections(slug,name), variants:product_variants(*)')
+          .select('*, collection:collections(slug,name), variants:product_variants(*), media:product_media(*)')
           .eq('status', 'published')
           .eq('product_variants.active', true)
           .order('position')
@@ -138,6 +138,14 @@ export async function getPublicContent(): Promise<PublicContent> {
         imageAlt: item.primary_image_alt,
         featured: item.featured,
         specifications: specifications(item.specifications),
+        media: (item.media ?? [])
+          .sort((left: any, right: any) => left.position - right.position)
+          .map((media: any) => ({
+            id: media.id,
+            image: supabase.storage.from('catalogue').getPublicUrl(media.storage_path).data.publicUrl,
+            imageAlt: media.alt_text,
+            position: media.position,
+          })),
         variants: (item.variants ?? []).map((variant: any) => ({
           id: variant.id,
           sku: variant.sku,

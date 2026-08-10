@@ -1,5 +1,5 @@
 ---
-import { ArrowRight, Boxes, FilePenLine, Image, Package, Settings, ShoppingBag } from '@lucide/astro';
+import { ArrowRight, Boxes, FilePenLine, Package, Settings, ShoppingBag } from '@lucide/astro';
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getAdminDashboard } from '../../lib/server/admin';
 export const prerender=false;
@@ -13,7 +13,6 @@ const cards=[
 ];
 const quick=[
  {label:'Edit homepage',copy:'Update featured storefront content.',href:'/admin/content',icon:FilePenLine,roles:['owner','editor']},
- {label:'Upload media',copy:'Stage and publish catalogue imagery.',href:'/admin/media',icon:Image,roles:['owner','editor']},
  {label:'Adjust stock',copy:'Record a traceable stock movement.',href:'/admin/inventory',icon:Boxes,roles:['owner','fulfilment']},
  {label:'Store settings',copy:'Manage customer-facing defaults.',href:'/admin/settings',icon:Settings,roles:['owner']},
 ];

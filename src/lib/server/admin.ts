@@ -114,12 +114,24 @@ export async function getAdminProducts() {
 
 export async function getAdminProduct(id: string) {
   const admin = createSupabaseAdmin();
-  const [product, collections] = await Promise.all([
+  const [product, collections, media, uploads] = await Promise.all([
     admin.from('products').select('*,variants:product_variants(*)').eq('id', id).maybeSingle(),
     admin.from('collections').select('id,name,status').order('position'),
+    admin.from('product_media').select('*').eq('product_id', id).order('position'),
+    admin.schema('private').from('media_uploads').select('*').eq('product_id', id).order('created_at', { ascending: false }),
   ]);
-  if (product.error || collections.error) throw new Error('Unable to load that product.');
-  return { product: product.data, collections: collections.data ?? [] };
+  if (product.error || collections.error || media.error || uploads.error) throw new Error('Unable to load that product.');
+  const uploadsWithPreviews = await Promise.all((uploads.data ?? []).map(async (item) => {
+    if (item.status !== 'staged') return item;
+    const preview = await admin.storage.from('cms-staging').createSignedUrl(item.staging_path, 600);
+    return { ...item, preview_url: preview.data?.signedUrl ?? null };
+  }));
+  return {
+    product: product.data,
+    collections: collections.data ?? [],
+    media: (media.data ?? []).map((item) => ({ ...item, public_url: admin.storage.from('catalogue').getPublicUrl(item.storage_path).data.publicUrl })),
+    uploads: uploadsWithPreviews,
+  };
 }
 
 export async function getAdminProductCreator() {

@@ -29,6 +29,20 @@ const initialVariant = product.variants[0];
           sizes="(max-width: 900px) 100vw, 58vw"
         />
       </div>
+      {product.media && product.media.length > 0 && (
+        <div class="product-gallery-grid">
+          {product.media.map((image) => (
+            <div class="product-gallery-image">
+              <ResponsiveImage
+                src={image.image}
+                alt={image.imageAlt}
+                loading="lazy"
+                sizes="(max-width: 900px) 100vw, 29vw"
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
     <article class="product-details">
       <p class="eyebrow">{product.eyebrow}</p>
@@ -197,6 +211,30 @@ const initialVariant = product.variants[0];
   }
 
   .product-image :global(img) {
+    object-fit: cover;
+  }
+
+  .product-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .product-gallery-image {
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--surface-soft);
+  }
+
+  .product-gallery-image :global(picture),
+  .product-gallery-image :global(img) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .product-gallery-image :global(img) {
     object-fit: cover;
   }
 
@@ -406,6 +444,10 @@ const initialVariant = product.variants[0];
   }
 
   @media (max-width: 40rem) {
+    .product-gallery-grid {
+      grid-template-columns: 1fr;
+    }
+
     .related-grid {
       grid-template-columns: 1fr;
     }

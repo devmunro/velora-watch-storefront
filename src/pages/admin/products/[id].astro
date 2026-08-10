@@ -1,6 +1,7 @@
 ---
 import { ArrowLeft } from '@lucide/astro';
 
+import ProductImages from '../../../components/admin/ProductImages.astro';
 import { formatMoney } from '../../../data/catalog';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { getAdminProduct } from '../../../lib/server/admin';
@@ -53,6 +54,14 @@ const specs = JSON.stringify(product.specifications ?? {}, null, 2);
       <button class="button button-primary" type="submit">Save product</button>
     </form>
   </section>
+
+  <ProductImages
+    productId={product.id}
+    productName={product.name}
+    media={result.media}
+    uploads={result.uploads}
+    role={role}
+  />
 
   <section class="variants-section">
     <div class="section-title"><p class="eyebrow">Purchasable variants</p><h2>SKUs and pricing</h2></div>

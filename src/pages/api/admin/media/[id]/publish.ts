@@ -10,20 +10,24 @@ export const POST: APIRoute = async (context) => {
   if ('response' in request) return request.response;
   const id = uuidSchema.safeParse(context.params.id);
   const version = versionSchema.safeParse(request.form.get('version'));
-  if (!id.success || !version.success) return adminResultRedirect('/admin/media', 'error');
+  const returnValue = request.form.get('returnTo');
+  const returnTo = typeof returnValue === 'string' && /^\/admin\/products\/[0-9a-f-]{36}$/.test(returnValue)
+    ? returnValue
+    : '/admin/products';
+  if (!id.success || !version.success) return adminResultRedirect(returnTo, 'error');
   const admin = createSupabaseAdmin();
   const { data: upload, error: readError } = await admin.schema('private').from('media_uploads')
     .select('*').eq('id', id.data).eq('status', 'staged').eq('version', version.data).maybeSingle();
-  if (readError) return adminResultRedirect('/admin/media', 'error');
-  if (!upload) return adminResultRedirect('/admin/media', 'conflict');
+  if (readError) return adminResultRedirect(returnTo, 'error');
+  if (!upload) return adminResultRedirect(returnTo, 'conflict');
   const { data: file, error: downloadError } = await admin.storage.from('cms-staging').download(upload.staging_path);
-  if (downloadError || !file || file.size > 10_485_760 || file.size < 1) return adminResultRedirect('/admin/media', 'error');
+  if (downloadError || !file || file.size > 10_485_760 || file.size < 1) return adminResultRedirect(returnTo, 'error');
   const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[upload.mime_type as 'image/jpeg' | 'image/png' | 'image/webp'];
   const cataloguePath = `${upload.product_id ? `products/${upload.product_id}` : 'editorial'}/${upload.id}.${extension}`;
   const { error: uploadError } = await admin.storage.from('catalogue').upload(cataloguePath, file, {
     cacheControl: '31536000', contentType: upload.mime_type, upsert: false,
   });
-  if (uploadError) return adminResultRedirect('/admin/media', 'error');
+  if (uploadError) return adminResultRedirect(returnTo, 'error');
 
   let productMediaId: string | null = null;
   if (upload.product_id) {
@@ -32,7 +36,7 @@ export const POST: APIRoute = async (context) => {
     }).select('id').single();
     if (mediaError) {
       await admin.storage.from('catalogue').remove([cataloguePath]);
-      return adminResultRedirect('/admin/media', 'error');
+      return adminResultRedirect(returnTo, 'error');
     }
     productMediaId = mediaRecord.id;
   }
@@ -43,10 +47,10 @@ export const POST: APIRoute = async (context) => {
   if (error || !data) {
     if (productMediaId) await admin.from('product_media').delete().eq('id', productMediaId);
     await admin.storage.from('catalogue').remove([cataloguePath]);
-    return adminResultRedirect('/admin/media', data ? 'error' : 'conflict');
+    return adminResultRedirect(returnTo, data ? 'error' : 'conflict');
   }
   await writeAudit(request.authorization.user.id, request.authorization.role, 'media.published', 'media_upload', upload.id, {
     assigned_to_product: Boolean(upload.product_id),
   });
-  return adminResultRedirect('/admin/media');
+  return adminResultRedirect(returnTo);
 };
