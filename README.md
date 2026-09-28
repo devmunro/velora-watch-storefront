@@ -1,16 +1,24 @@
 # Velora
 
-Velora is a responsive watch storefront and commerce administration app built with Astro, TypeScript, Supabase, Stripe Checkout and Cloudflare Workers. The project includes the customer-facing shop, account pages, a staff-only admin area, database migrations and tests.
+![Astro](https://img.shields.io/badge/Astro-7B36ED?logo=astro&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?logo=cloudflare&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white) ![Stripe](https://img.shields.io/badge/Stripe-635BFF?logo=stripe&logoColor=white)
 
-## Storefront preview
+Velora is a responsive luxury watch storefront and commerce administration app built with Astro, TypeScript, Supabase, Stripe Checkout and Cloudflare Workers. It includes the customer shopping experience, passwordless customer accounts, a role-based admin area, database migrations and automated checks.
 
-The screenshots below are captures of the local site running from this repository.
+## Screenshots
+
+These screenshots show the storefront and product administration using the sample catalogue included with the project.
 
 ![Velora homepage showing the featured Meridian Chronograph](docs/screenshots/homepage.png)
 
 | Watch catalogue | Product page |
 | --- | --- |
 | ![Watch catalogue with the three seeded watches](docs/screenshots/watches.png) | ![Meridian Chronograph page with style selection, price and quantity controls](docs/screenshots/product-detail.png) |
+
+### Product administration
+
+The staff admin includes a product catalogue for editing watches, categories, variants, prices and publication status.
+
+![Velora admin product catalogue showing published watches and product management controls](docs/screenshots/admin-products.png)
 
 ## What’s included
 
@@ -49,7 +57,7 @@ src/pages/api/         same-origin form handlers and Stripe webhook
 supabase/migrations/  database schema, access rules and transaction functions
 supabase/tests/       database and Row Level Security tests
 tests/                unit tests for cart, HTTP, checkout and admin permissions
-docs/screenshots/     local storefront screenshots used in this README
+docs/screenshots/     storefront and admin screenshots used in this README
 ```
 
 ## Technology
