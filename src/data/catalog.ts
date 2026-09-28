@@ -433,19 +433,3 @@ export function formatMoney(amount: number, currency = 'gbp') {
     maximumFractionDigits: 2,
   }).format(amount / 100);
 }
-
-export function getProduct(slug: string) {
-  return products.find((product) => product.slug === slug);
-}
-
-export function getCollection(slug: string) {
-  return collections.find((collection) => collection.slug === slug);
-}
-
-export function getJournalPost(slug: string) {
-  return journalPosts.find((post) => post.slug === slug);
-}
-
-export function getPolicy(slug: string) {
-  return policyPages.find((policy) => policy.slug === slug);
-}
