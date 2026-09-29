@@ -2,6 +2,8 @@
 
 ![Astro](https://img.shields.io/badge/Astro-7B36ED?logo=astro&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?logo=cloudflare&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white) ![Stripe](https://img.shields.io/badge/Stripe-635BFF?logo=stripe&logoColor=white)
 
+[Live storefront](https://velora-storefront.highforce.workers.dev)
+
 Velora is a responsive luxury watch storefront and commerce administration app built with Astro, TypeScript, Supabase, Stripe Checkout and Cloudflare Workers. It includes the customer shopping experience, passwordless customer accounts, a role-based admin area, database migrations and automated checks.
 
 ## Screenshots
